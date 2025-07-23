@@ -7,6 +7,7 @@ interface ReportsProps {
 }
 
 export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
+  const [reportType, setReportType] = useState<'monthly' | 'yearly'>('monthly');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [reportData, setReportData] = useState<any>(null);
@@ -21,7 +22,7 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
 
   useEffect(() => {
     generateReport();
-  }, [selectedMonth, selectedYear]);
+  }, [reportType, selectedMonth, selectedYear]);
 
   const generateReport = () => {
     setLoading(true);
@@ -30,10 +31,14 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       const requests = getRequests();
       const users = getUsers();
       
-      // Filter requests by selected month and year
+      // Filter requests based on report type
       const filteredRequests = requests.filter(request => {
         const requestDate = new Date(request.submittedAt);
-        return requestDate.getMonth() === selectedMonth && requestDate.getFullYear() === selectedYear;
+        if (reportType === 'monthly') {
+          return requestDate.getMonth() === selectedMonth && requestDate.getFullYear() === selectedYear;
+        } else {
+          return requestDate.getFullYear() === selectedYear;
+        }
       });
 
       // Calculate statistics
@@ -85,9 +90,13 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
   const exportReport = () => {
     if (!reportData) return;
 
+    const periodText = reportType === 'monthly' 
+      ? `${months[selectedMonth]} ${selectedYear}`
+      : `Year ${selectedYear}`;
+
     const csvContent = [
       ['Laptop Reimbursement Report'],
-      [`Period: ${months[selectedMonth]} ${selectedYear}`],
+      [`Period: ${periodText}`],
       [''],
       ['Summary Statistics'],
       ['Total Requests', reportData.stats.totalRequests],
@@ -114,7 +123,10 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `laptop-reimbursement-report-${months[selectedMonth]}-${selectedYear}.csv`;
+    const fileName = reportType === 'monthly' 
+      ? `laptop-reimbursement-report-${months[selectedMonth]}-${selectedYear}.csv`
+      : `laptop-reimbursement-report-year-${selectedYear}.csv`;
+    a.download = fileName;
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -142,21 +154,35 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Reports</h2>
-          <p className="text-gray-600">Monthly and yearly analytics for laptop reimbursements</p>
+          <p className="text-gray-600">
+            {reportType === 'monthly' ? 'Monthly' : 'Yearly'} analytics for laptop reimbursements
+          </p>
         </div>
         
         <div className="flex items-center gap-4 mt-4 sm:mt-0">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-gray-500" />
             <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+              value={reportType}
+              onChange={(e) => setReportType(e.target.value as 'monthly' | 'yearly')}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              {months.map((month, index) => (
-                <option key={index} value={index}>{month}</option>
-              ))}
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
             </select>
+            
+            {reportType === 'monthly' && (
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {months.map((month, index) => (
+                  <option key={index} value={index}>{month}</option>
+                ))}
+              </select>
+            )}
+            
             <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
