@@ -45,6 +45,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Reports',
       icon: BarChart3,
       roles: ['it_admin', 'finance']
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: Settings,
+      roles: ['it_admin']
     }
   ];
 
