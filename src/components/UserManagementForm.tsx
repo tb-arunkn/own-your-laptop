@@ -8,6 +8,7 @@ interface UserManagementFormProps {
 
 export const UserManagementForm: React.FC<UserManagementFormProps> = ({ onUserCreated }) => {
   const [formData, setFormData] = useState({
+    name: '',
     employeeId: '',
     email: '',
     joiningDate: '',
@@ -25,6 +26,10 @@ export const UserManagementForm: React.FC<UserManagementFormProps> = ({ onUserCr
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Name is required';
+    }
 
     if (!formData.employeeId.trim()) {
       newErrors.employeeId = 'Employee ID is required';
@@ -75,7 +80,7 @@ export const UserManagementForm: React.FC<UserManagementFormProps> = ({ onUserCr
       setSuccess(true);
       
       setTimeout(() => {
-        setFormData({ employeeId: '', email: '', joiningDate: '', role: 'employee' });
+        setFormData({ name: '', employeeId: '', email: '', joiningDate: '', role: 'employee' });
         setSuccess(false);
         onUserCreated();
       }, 2000);
@@ -128,6 +133,23 @@ export const UserManagementForm: React.FC<UserManagementFormProps> = ({ onUserCr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="e.g., John Doe"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+              )}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Employee ID *
               </label>
               <input
@@ -163,39 +185,37 @@ export const UserManagementForm: React.FC<UserManagementFormProps> = ({ onUserCr
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email *
-              </label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                placeholder="user@company.com"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Joining Date *
-              </label>
-              <input
-                type="date"
-                name="joiningDate"
-                value={formData.joiningDate}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-              {errors.joiningDate && (
-                <p className="mt-1 text-sm text-red-600">{errors.joiningDate}</p>
-              )}
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email *
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="user@company.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+            )}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Joining Date *
+            </label>
+            <input
+              type="date"
+              name="joiningDate"
+              value={formData.joiningDate}
+              onChange={handleChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            />
+            {errors.joiningDate && (
+              <p className="mt-1 text-sm text-red-600">{errors.joiningDate}</p>
+            )}
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
@@ -205,7 +225,6 @@ export const UserManagementForm: React.FC<UserManagementFormProps> = ({ onUserCr
                 <h4 className="font-medium text-blue-800 mb-1">Default Settings</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• Default password: <code className="bg-blue-100 px-1 rounded">temp123</code></li>
-                  <li>• Name: Auto-generated from email</li>
                 </ul>
               </div>
             </div>

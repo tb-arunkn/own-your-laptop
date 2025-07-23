@@ -88,7 +88,6 @@ export const saveUser = (userData: Omit<User, 'id' | 'password' | 'name'>): User
     ...userData,
     id: Date.now().toString(),
     password: 'temp123', // Default temporary password
-    name: userData.email.split('@')[0], // Use email prefix as default name
     isActive: true, // New users are active by default
   };
   
