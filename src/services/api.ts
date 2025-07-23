@@ -144,6 +144,35 @@ export const deleteUser = (userId: string): boolean => {
   return true;
 };
 
+export const updateUser = (userId: string, updates: Partial<Pick<User, 'name' | 'email' | 'employeeId'>>): User => {
+  const users = getUsers();
+  const userIndex = users.findIndex(u => u.id === userId);
+  
+  if (userIndex === -1) {
+    throw new Error('User not found');
+  }
+  
+  // Check for duplicate employee ID or email (excluding current user)
+  if (updates.employeeId) {
+    const existingUser = users.find(u => u.id !== userId && u.employeeId === updates.employeeId);
+    if (existingUser) {
+      throw new Error('Employee ID already exists');
+    }
+  }
+  
+  if (updates.email) {
+    const existingUser = users.find(u => u.id !== userId && u.email === updates.email);
+    if (existingUser) {
+      throw new Error('Email already exists');
+    }
+  }
+  
+  // Update user
+  users[userIndex] = { ...users[userIndex], ...updates };
+  localStorage.setItem('users', JSON.stringify(users));
+  
+  return users[userIndex];
+};
 export const authenticateUser = (email: string, password: string): User | null => {
   const users = getUsers();
   const user = users.find(u => u.email === email && u.password === password && u.isActive !== false);
