@@ -292,6 +292,21 @@ export const updateRequestStatus = (
   };
   
   localStorage.setItem('requests', JSON.stringify(requests));
+  
+  // Send email notifications based on status change
+  const userData = users.find(u => u.id === originalRequest.submittedBy);
+  if (userData) {
+    const updatedRequest = requests[requestIndex];
+    
+    if (status === 'approved') {
+      sendRequestApprovedEmail(updatedRequest, userData, comments).catch(console.error);
+    } else if (status === 'rejected') {
+      sendRequestRejectedEmail(updatedRequest, userData, comments).catch(console.error);
+    } else if (status === 'processed') {
+      sendRequestProcessedEmail(updatedRequest, userData, comments).catch(console.error);
+    }
+  }
+  
   return requests[requestIndex];
 };
 
