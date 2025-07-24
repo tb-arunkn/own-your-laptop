@@ -13,6 +13,7 @@ export const AdminDashboard: React.FC = () => {
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({
     'user-management': false
   });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [requests, setRequests] = useState<Request[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +58,10 @@ export const AdminDashboard: React.FC = () => {
       ...prev,
       [menu]: !prev[menu]
     }));
+  };
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed(prev => !prev);
   };
 
   const handleStatusUpdate = async (id: string, status: string, comments?: string) => {
@@ -178,9 +183,11 @@ export const AdminDashboard: React.FC = () => {
         userRole="it_admin"
         expandedMenus={expandedMenus}
         onMenuToggle={handleMenuToggle}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
       />
       
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 overflow-auto transition-all duration-300 ${sidebarCollapsed ? 'ml-0' : 'ml-0'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {renderContent()}
         </div>

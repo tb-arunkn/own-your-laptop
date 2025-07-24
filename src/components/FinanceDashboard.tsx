@@ -8,6 +8,7 @@ import { getRequests, getStats, updateRequestStatus, Request } from '../services
 export const FinanceDashboard: React.FC = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
   const [expandedMenus, setExpandedMenus] = useState<Record<string, boolean>>({});
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('approved');
@@ -30,6 +31,10 @@ export const FinanceDashboard: React.FC = () => {
 
   const handleMenuToggle = (menu: string) => {
     setExpandedMenus(prev => ({ ...prev, [menu]: !prev[menu] }));
+  };
+
+  const handleToggleSidebar = () => {
+    setSidebarCollapsed(prev => !prev);
   };
 
   const handleStatusUpdate = async (id: string, status: string, comments?: string) => {
@@ -140,9 +145,11 @@ export const FinanceDashboard: React.FC = () => {
         userRole="finance"
         expandedMenus={expandedMenus}
         onMenuToggle={handleMenuToggle}
+        isCollapsed={sidebarCollapsed}
+        onToggleCollapse={handleToggleSidebar}
       />
       
-      <div className="flex-1 overflow-auto">
+      <div className={`flex-1 overflow-auto transition-all duration-300 ${sidebarCollapsed ? 'ml-0' : 'ml-0'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {renderContent()}
         </div>
