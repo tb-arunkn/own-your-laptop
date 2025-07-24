@@ -25,9 +25,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'requests',
-      label: 'Manage Requests',
+      label: userRole === 'finance' ? 'Manage Requests' : 'Manage Requests',
       icon: FileText,
-      roles: ['it_admin']
+      roles: ['it_admin', 'finance']
     },
     {
       id: 'user-management',
