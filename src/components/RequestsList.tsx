@@ -122,8 +122,17 @@ export const RequestsList: React.FC<RequestsListProps> = ({
         depState.comments || undefined
       );
     } else if (onStatusUpdate) {
-      const comments = newStatus === 'paid' ? prompt('Add comments (optional):') : undefined;
-      onStatusUpdate(id, newStatus, comments || undefined);
+      let comments: string | undefined;
+      
+      if (newStatus === 'rejected') {
+        // Comments will be handled in AdminDashboard
+        onStatusUpdate(id, newStatus);
+      } else if (newStatus === 'paid') {
+        comments = prompt('Add comments (optional):') || undefined;
+        onStatusUpdate(id, newStatus, comments);
+      } else {
+        onStatusUpdate(id, newStatus);
+      }
     }
   };
 

@@ -66,6 +66,12 @@ export const AdminDashboard: React.FC = () => {
 
   const handleStatusUpdate = async (id: string, status: string, comments?: string) => {
     try {
+      // Get comments for rejection
+      let finalComments = comments;
+      if (status === 'rejected' && !finalComments) {
+        finalComments = prompt('Please provide a reason for rejection:') || undefined;
+      }
+      
       const updatedRequest = updateRequestStatus(id, status, comments, 'IT Admin');
       if (updatedRequest) {
         fetchData(); // Refresh data

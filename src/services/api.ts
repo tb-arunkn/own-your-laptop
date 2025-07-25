@@ -210,6 +210,9 @@ export const updateRequestStatus = (
   
   if (requestIndex === -1) return null;
   
+  // Store original request for email notifications
+  const originalRequest = requests[requestIndex];
+  
   const now = new Date();
   let processedAt, monthlyInstallment, installmentStartDate, installmentEndDate, nextEligibleDate;
   
@@ -294,17 +297,29 @@ export const updateRequestStatus = (
   localStorage.setItem('requests', JSON.stringify(requests));
   
   // Send email notifications based on status change
+  try {
+    const users = getUsers();
   const userData = users.find(u => u.id === originalRequest.submittedBy);
   if (userData) {
     const updatedRequest = requests[requestIndex];
     
     if (status === 'approved') {
-      sendRequestApprovedEmail(updatedRequest, userData, comments).catch(console.error);
+        import('../services/emailService').then(({ sendRequestApprovedEmail }) => {
+          sendRequestApprovedEmail(updatedRequest, userData, comments).catch(console.error);
+        });
     } else if (status === 'rejected') {
-      sendRequestRejectedEmail(updatedRequest, userData, comments).catch(console.error);
+        import('../services/emailService').then(({ sendRequestRejectedEmail }) => {
+          sendRequestRejectedEmail(updatedRequest, userData, comments).catch(console.error);
+        });
     } else if (status === 'processed') {
-      sendRequestProcessedEmail(updatedRequest, userData, comments).catch(console.error);
+        import('../services/emailService').then(({ sendRequestProcessedEmail }) => {
+          sendRequestProcessedEmail(updatedRequest, userData, comments).catch(console.error);
+        });
     }
+  }
+  } catch (error) {
+    console.error('Error sending email notification:', error);
+    // Don't fail the request update if email fails
   }
   
   return requests[requestIndex];
