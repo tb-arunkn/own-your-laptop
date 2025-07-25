@@ -1,15 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { getRequests, getUsers } from '../services/api';
-import { BarChart3, Calendar, Download, Filter, TrendingUp, TrendingDown } from 'lucide-react';
+import { BarChart3, Calendar, Download, Filter, TrendingUp, TrendingDown, PieChart } from 'lucide-react';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface ReportsProps {
   userRole: string;
 }
 
 export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
-  const [reportType, setReportType] = useState<'monthly' | 'yearly'>('monthly');
+  const [reportType, setReportType] = useState<'monthly' | 'yearly' | 'financial-year'>('monthly');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedFinancialYear, setSelectedFinancialYear] = useState(new Date().getFullYear());
   const [reportData, setReportData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,10 +39,14 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
   ];
 
   const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+  const financialYears = Array.from({ length: 5 }, (_, i) => {
+    const year = new Date().getFullYear() - i;
+    return { value: year, label: `FY ${year}-${(year + 1).toString().slice(-2)}` };
+  });
 
   useEffect(() => {
     generateReport();
-  }, [reportType, selectedMonth, selectedYear]);
+  }, [reportType, selectedMonth, selectedYear, selectedFinancialYear]);
 
   const generateReport = () => {
     setLoading(true);
@@ -39,6 +63,10 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         } else {
           return requestDate.getFullYear() === selectedYear;
         }
+        } else if (reportType === 'financial-year') {
+          const financialYearStart = new Date(selectedFinancialYear, 3, 1); // April 1st
+          const financialYearEnd = new Date(selectedFinancialYear + 1, 2, 31); // March 31st
+          return requestDate >= financialYearStart && requestDate <= financialYearEnd;
       });
 
       // Calculate statistics
@@ -78,7 +106,10 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         amounts,
         categoryBreakdown,
         departmentBreakdown,
-        requests: filteredRequests
+        requests: filteredRequests,
+        ...(reportType === 'financial-year' && {
+          monthlyData: generateMonthlyFinancialData(requests, selectedFinancialYear)
+        })
       });
     } catch (error) {
       console.error('Error generating report:', error);
@@ -87,12 +118,51 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     }
   };
 
+  const generateMonthlyFinancialData = (requests: any[], financialYear: number) => {
+    const months = [
+      'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+      'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'
+    ];
+    
+    const monthlyData = months.map((month, index) => {
+      // Calculate actual month (April = 3, May = 4, ..., March = 2 of next year)
+      const actualMonth = index < 9 ? index + 3 : index - 9;
+      const actualYear = index < 9 ? financialYear : financialYear + 1;
+      
+      const monthRequests = requests.filter(request => {
+        const requestDate = new Date(request.submittedAt);
+        return requestDate.getMonth() === actualMonth && 
+               requestDate.getFullYear() === actualYear &&
+               ['approved', 'processed', 'paid'].includes(request.status);
+      });
+      
+      const developerRequests = monthRequests.filter(req => req.category === 'Developer');
+      const nonDeveloperRequests = monthRequests.filter(req => req.category === 'Non-Developer');
+      
+      return {
+        month,
+        developer: {
+          count: developerRequests.length,
+          amount: developerRequests.reduce((sum, req) => sum + req.reimbursementAmount, 0)
+        },
+        nonDeveloper: {
+          count: nonDeveloperRequests.length,
+          amount: nonDeveloperRequests.reduce((sum, req) => sum + req.reimbursementAmount, 0)
+        }
+      };
+    });
+    
+    return monthlyData;
+  };
+
   const exportReport = () => {
     if (!reportData) return;
 
-    const periodText = reportType === 'monthly' 
+    const periodText = reportType === 'monthly'
       ? `${months[selectedMonth]} ${selectedYear}`
-      : `Year ${selectedYear}`;
+      : reportType === 'yearly'
+      ? `Year ${selectedYear}`
+      : `FY ${selectedFinancialYear}-${(selectedFinancialYear + 1).toString().slice(-2)}`;
 
     const csvContent = [
       ['Laptop Reimbursement Report'],
@@ -123,12 +193,61 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const fileName = reportType === 'monthly' 
+    const fileName = reportType === 'monthly'
       ? `laptop-reimbursement-report-${months[selectedMonth]}-${selectedYear}.csv`
-      : `laptop-reimbursement-report-year-${selectedYear}.csv`;
+      : reportType === 'yearly'
+      ? `laptop-reimbursement-report-year-${selectedYear}.csv`
+      : `laptop-reimbursement-report-FY-${selectedFinancialYear}-${(selectedFinancialYear + 1).toString().slice(-2)}.csv`;
     a.download = fileName;
     a.click();
     window.URL.revokeObjectURL(url);
+  };
+
+  const getChartData = () => {
+    if (!reportData?.monthlyData) return null;
+    
+    return {
+      labels: reportData.monthlyData.map((data: any) => data.month),
+      datasets: [
+        {
+          label: 'Developer',
+          data: reportData.monthlyData.map((data: any) => data.developer.amount),
+          backgroundColor: 'rgba(59, 130, 246, 0.8)',
+          borderColor: 'rgba(59, 130, 246, 1)',
+          borderWidth: 1,
+        },
+        {
+          label: 'Non-Developer',
+          data: reportData.monthlyData.map((data: any) => data.nonDeveloper.amount),
+          backgroundColor: 'rgba(16, 185, 129, 0.8)',
+          borderColor: 'rgba(16, 185, 129, 1)',
+          borderWidth: 1,
+        },
+      ],
+    };
+  };
+
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: `Monthly Reimbursement Amounts - FY ${selectedFinancialYear}-${(selectedFinancialYear + 1).toString().slice(-2)}`,
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        ticks: {
+          callback: function(value: any) {
+            return '₹' + value.toLocaleString();
+          }
+        }
+      },
+    },
   };
 
   if (loading) {
@@ -155,7 +274,7 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Reports</h2>
           <p className="text-gray-600">
-            {reportType === 'monthly' ? 'Monthly' : 'Yearly'} analytics for laptop reimbursements
+            {reportType === 'monthly' ? 'Monthly' : reportType === 'yearly' ? 'Yearly' : 'Financial Year'} analytics for laptop reimbursements
           </p>
         </div>
         
@@ -164,11 +283,12 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
             <Calendar className="h-4 w-4 text-gray-500" />
             <select
               value={reportType}
-              onChange={(e) => setReportType(e.target.value as 'monthly' | 'yearly')}
+              onChange={(e) => setReportType(e.target.value as 'monthly' | 'yearly' | 'financial-year')}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="monthly">Monthly</option>
               <option value="yearly">Yearly</option>
+              <option value="financial-year">Financial Year</option>
             </select>
             
             {reportType === 'monthly' && (
@@ -183,7 +303,18 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
               </select>
             )}
             
-            <select
+            {reportType === 'financial-year' ? (
+              <select
+                value={selectedFinancialYear}
+                onChange={(e) => setSelectedFinancialYear(parseInt(e.target.value))}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {financialYears.map(fy => (
+                  <option key={fy.value} value={fy.value}>{fy.label}</option>
+                ))}
+              </select>
+            ) : (
+              <select
               value={selectedYear}
               onChange={(e) => setSelectedYear(parseInt(e.target.value))}
               className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -192,6 +323,7 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
                 <option key={year} value={year}>{year}</option>
               ))}
             </select>
+            )}
           </div>
           
           <button
@@ -206,6 +338,61 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
 
       {reportData && (
         <>
+          {/* Financial Year Chart */}
+          {reportType === 'financial-year' && reportData.monthlyData && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <PieChart className="h-5 w-5 text-blue-600" />
+                <h3 className="text-lg font-medium text-gray-900">
+                  Monthly Breakdown - FY {selectedFinancialYear}-{(selectedFinancialYear + 1).toString().slice(-2)}
+                </h3>
+              </div>
+              <div className="h-96">
+                <Bar data={getChartData()!} options={chartOptions} />
+              </div>
+              
+              {/* Monthly Summary Table */}
+              <div className="mt-6 overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Developer Count</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Developer Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Non-Developer Count</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Non-Developer Amount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {reportData.monthlyData.map((monthData: any, index: number) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {monthData.month}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {monthData.developer.count}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          ₹{monthData.developer.amount.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          {monthData.nonDeveloper.count}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          ₹{monthData.nonDeveloper.amount.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          ₹{(monthData.developer.amount + monthData.nonDeveloper.amount).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
