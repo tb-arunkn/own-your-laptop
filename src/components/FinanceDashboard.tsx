@@ -53,8 +53,8 @@ export const FinanceDashboard: React.FC = () => {
 
   const handleProcessWithDepreciation = async (
     id: string, 
-    depreciationType: string, 
-    depreciationValue: string, 
+    depreciationType: string,
+    depreciationValue: string,
     comments?: string
   ) => {
     try {
@@ -62,9 +62,7 @@ export const FinanceDashboard: React.FC = () => {
         id, 
         'processed', 
         comments, 
-        'Finance Team',
-        depreciationType,
-        depreciationValue
+        'Finance Team'
       );
       if (updatedRequest) {
         fetchData(); // Refresh data

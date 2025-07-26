@@ -1,6 +1,6 @@
 import React from 'react';
 import { useState } from 'react';
-import { getFileUrl } from '../services/api';
+import { getFileUrl, calculateDepreciation } from '../services/api';
 import { FileText, Calendar, DollarSign, User, Eye, CreditCard, Clock, Calculator, AlertTriangle } from 'lucide-react';
 
 import { Request } from '../services/api';
@@ -213,6 +213,45 @@ export const RequestsList: React.FC<RequestsListProps> = ({
             </div>
           </div>
 
+          {/* Automatic Depreciation Display */}
+          {(() => {
+            const depreciationInfo = calculateDepreciation(
+              request.laptopPurchaseDate,
+              request.joiningDate,
+              request.invoiceAmount * 0.75 // Original calculated amount
+            );
+            
+            if (depreciationInfo.depreciationApplied) {
+              return (
+                <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                  <h4 className="font-medium text-amber-800 mb-3 flex items-center gap-2">
+                    <Calculator className="h-4 w-4" />
+                    Automatic Depreciation Applied
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <span className="text-amber-600 font-medium">Laptop Age:</span>
+                      <p className="font-bold text-amber-800">{depreciationInfo.yearsOld} year(s)</p>
+                    </div>
+                    <div>
+                      <span className="text-amber-600 font-medium">Depreciation:</span>
+                      <p className="font-bold text-amber-800">{depreciationInfo.depreciationPercentage}% (20% yearly)</p>
+                    </div>
+                    <div>
+                      <span className="text-amber-600 font-medium">Original Amount:</span>
+                      <p className="font-medium">₹{Math.round(request.invoiceAmount * 0.75).toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <span className="text-amber-600 font-medium">Final Amount:</span>
+                      <p className="font-bold text-amber-800">₹{depreciationInfo.depreciatedAmount.toLocaleString()}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* Show installment details for processed requests */}
           {request.status === 'processed' && request.monthlyInstallment && (
             <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
@@ -291,89 +330,67 @@ export const RequestsList: React.FC<RequestsListProps> = ({
           )}
 
           {/* Depreciation Section for Finance Team */}
-          {userRole === 'finance' && request.status === 'approved' && (
+          {userRole === 'finance' && request.status === 'approved' && (() => {
+            const depreciationInfo = calculateDepreciation(
+              request.laptopPurchaseDate,
+              request.joiningDate,
+              request.reimbursementAmount
+            );
+            
+            return (
             <div className="mt-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
               <div className="flex items-center gap-3 mb-4">
                 <Calculator className="h-5 w-5 text-blue-600" />
-                <h4 className="font-medium text-gray-900">Depreciation Options</h4>
-                {isLaptopOlderThanJoining(request) && (
+                <h4 className="font-medium text-gray-900">Automatic Depreciation Calculation</h4>
+                {depreciationInfo.depreciationApplied && (
                   <div className="flex items-center gap-1 text-amber-600 text-sm">
                     <AlertTriangle className="h-4 w-4" />
-                    <span>Laptop purchased before joining</span>
+                    <span>Depreciation applied: {depreciationInfo.depreciationPercentage}%</span>
                   </div>
                 )}
               </div>
               
-              <div className="space-y-4">
-                <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={getDepreciationState(request.id).enabled}
-                      onChange={(e) => updateDepreciationState(request.id, 'enabled', e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <span className="text-sm font-medium text-gray-700">Apply Depreciation</span>
-                  </label>
-                  
-                  {isLaptopOlderThanJoining(request) && (
-                    <div className="text-xs text-gray-600">
-                      Time difference: {(() => {
-                        const diff = getTimeDifference(request);
-                        return `${diff.days} days (${diff.months} months, ${diff.years} years)`;
-                      })()}
-                    </div>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-white p-3 rounded border">
+                  <span className="text-sm text-gray-600">Purchase Date:</span>
+                  <p className="font-medium">{new Date(request.laptopPurchaseDate).toLocaleDateString()}</p>
                 </div>
-                
-                {getDepreciationState(request.id).enabled && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Depreciation Type *
-                      </label>
-                      <select
-                        value={getDepreciationState(request.id).type}
-                        onChange={(e) => updateDepreciationState(request.id, 'type', e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      >
-                        <option value="">Select type</option>
-                        <option value="daily">Daily</option>
-                        <option value="monthly">Monthly</option>
-                        <option value="yearly">Yearly</option>
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Depreciation Rate (%) *
-                      </label>
-                      <input
-                        type="number"
-                        value={getDepreciationState(request.id).value}
-                        onChange={(e) => updateDepreciationState(request.id, 'value', e.target.value)}
-                        placeholder="e.g., 10"
-                        min="0.1"
-                        max="50"
-                        step="0.1"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Final Amount
-                      </label>
-                      <div className="px-3 py-2 bg-blue-50 border border-blue-200 rounded-md text-sm font-medium text-blue-800">
-                        ₹{calculateDepreciatedAmount(
-                          request, 
-                          getDepreciationState(request.id).type, 
-                          getDepreciationState(request.id).value
-                        ).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                <div className="bg-white p-3 rounded border">
+                  <span className="text-sm text-gray-600">Joining Date:</span>
+                  <p className="font-medium">{new Date(request.joiningDate).toLocaleDateString()}</p>
+                </div>
+                <div className="bg-white p-3 rounded border">
+                  <span className="text-sm text-gray-600">Laptop Age:</span>
+                  <p className="font-medium">{depreciationInfo.yearsOld} year(s)</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-blue-50 p-3 rounded border border-blue-200">
+                  <span className="text-blue-600 font-medium text-sm">Original Amount:</span>
+                  <p className="font-bold text-blue-800">₹{request.reimbursementAmount.toLocaleString()}</p>
+                </div>
+                <div className="bg-amber-50 p-3 rounded border border-amber-200">
+                  <span className="text-amber-600 font-medium text-sm">Depreciation Applied:</span>
+                  <p className="font-bold text-amber-800">{depreciationInfo.depreciationPercentage}% (20% yearly)</p>
+                </div>
+                <div className="bg-green-50 p-3 rounded border border-green-200">
+                  <span className="text-green-600 font-medium text-sm">Final Amount:</span>
+                  <p className="font-bold text-green-800">₹{depreciationInfo.depreciatedAmount.toLocaleString()}</p>
+                </div>
+              </div>
+              
+              <div className="mt-4">
+                <div className="bg-gray-100 p-3 rounded text-sm text-gray-700">
+                  <strong>Automatic Calculation:</strong> Depreciation is automatically calculated at 20% per year for laptops purchased before joining date. 
+                  {depreciationInfo.depreciationApplied 
+                    ? ` This laptop is ${depreciationInfo.yearsOld} year(s) old, so ${depreciationInfo.depreciationPercentage}% depreciation is applied.`
+                    : ' No depreciation applied as laptop was purchased after joining date.'
+                  }
+                </div>
+              </div>
+              
+              <div className="mt-4">
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -383,13 +400,14 @@ export const RequestsList: React.FC<RequestsListProps> = ({
                     value={getDepreciationState(request.id).comments}
                     onChange={(e) => updateDepreciationState(request.id, 'comments', e.target.value)}
                     rows={2}
-                    placeholder="Add any comments about depreciation..."
+                    placeholder="Add any comments about processing..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                   />
                 </div>
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {showActions && canUpdateStatus(request.status, userRole) && (
             <div className="mt-4 pt-4 border-t border-gray-200 flex gap-2">

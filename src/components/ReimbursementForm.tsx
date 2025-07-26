@@ -54,18 +54,27 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // Check eligibility (15+ days)
+    // Check eligibility (365+ days)
     const joining = new Date(formData.joiningDate);
     const today = new Date();
     const daysSinceJoining = Math.floor((today.getTime() - joining.getTime()) / (1000 * 60 * 60 * 24));
     
-    if (daysSinceJoining < 15) {
-      newErrors.joiningDate = 'Employee must be working for more than 15 days';
+    if (daysSinceJoining < 365) {
+      newErrors.joiningDate = 'Employee must be working for more than 365 days (1 year)';
     }
 
-    // Check laptop purchase date (within 365 days)
+    // Check laptop purchase date
+    if (!formData.laptopPurchaseDate) {
+      newErrors.laptopPurchaseDate = 'Required';
+    } else {
+      const purchaseDate = new Date(formData.laptopPurchaseDate);
+      const joiningDate = new Date(formData.joiningDate);
+      
+      if (purchaseDate > today) {
+        newErrors.laptopPurchaseDate = 'Purchase date cannot be in the future';
+      }
+    }
 
-    if (!formData.laptopPurchaseDate) newErrors.laptopPurchaseDate = 'Required';
     if (!formData.invoiceAmount) newErrors.invoiceAmount = 'Required';
     if (!file) newErrors.file = 'Invoice file is required';
 

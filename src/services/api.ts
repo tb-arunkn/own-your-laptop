@@ -197,6 +197,52 @@ export const saveRequest = (request: Omit<Request, 'id' | 'submittedAt'>): Reque
   return newRequest;
 };
 
+// Calculate depreciation for a laptop
+export const calculateDepreciation = (purchaseDate: string, joiningDate: string, originalAmount: number): {
+  depreciatedAmount: number;
+  depreciationApplied: boolean;
+  yearsOld: number;
+  depreciationPercentage: number;
+} => {
+  const purchase = new Date(purchaseDate);
+  const joining = new Date(joiningDate);
+  
+  // If laptop was purchased after joining, no depreciation
+  if (purchase >= joining) {
+    return {
+      depreciatedAmount: originalAmount,
+      depreciationApplied: false,
+      yearsOld: 0,
+      depreciationPercentage: 0
+    };
+  }
+  
+  // Calculate years between purchase and joining
+  const timeDiff = joining.getTime() - purchase.getTime();
+  const yearsOld = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * 365));
+  
+  if (yearsOld === 0) {
+    return {
+      depreciatedAmount: originalAmount,
+      depreciationApplied: false,
+      yearsOld: 0,
+      depreciationPercentage: 0
+    };
+  }
+  
+  // Apply 20% yearly depreciation
+  const depreciationRate = 0.20;
+  const depreciationPercentage = Math.min(yearsOld * 20, 80); // Max 80% depreciation
+  const depreciatedAmount = Math.round(originalAmount * Math.pow(1 - depreciationRate, yearsOld));
+  
+  return {
+    depreciatedAmount: Math.max(depreciatedAmount, originalAmount * 0.2), // Minimum 20% of original value
+    depreciationApplied: true,
+    yearsOld,
+    depreciationPercentage
+  };
+};
+
 export const updateRequestStatus = (
   id: string, 
   status: string, 
@@ -220,23 +266,22 @@ export const updateRequestStatus = (
   if (status === 'processed') {
     processedAt = now.toISOString();
     
-    // Calculate final reimbursement amount with depreciation if applicable
+    // Calculate final reimbursement amount with automatic depreciation
     let finalReimbursementAmount = requests[requestIndex].reimbursementAmount;
     
-    if (depreciationType && depreciationValue) {
-      const purchaseDate = new Date(requests[requestIndex].laptopPurchaseDate);
-      const joiningDate = new Date(requests[requestIndex].joiningDate);
-      const depreciationRate = parseFloat(depreciationValue) / 100;
-      
-      if (depreciationType === 'monthly') {
-        const monthsDiff = Math.floor((joiningDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
-        finalReimbursementAmount = finalReimbursementAmount * Math.pow(1 - depreciationRate, monthsDiff);
-      } else if (depreciationType === 'yearly') {
-        const yearsDiff = Math.floor((joiningDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365));
-        finalReimbursementAmount = finalReimbursementAmount * Math.pow(1 - depreciationRate, yearsDiff);
-      }
-      
-      finalReimbursementAmount = Math.round(finalReimbursementAmount);
+    // Apply automatic depreciation calculation
+    const depreciationResult = calculateDepreciation(
+      requests[requestIndex].laptopPurchaseDate,
+      requests[requestIndex].joiningDate,
+      finalReimbursementAmount
+    );
+    
+    finalReimbursementAmount = depreciationResult.depreciatedAmount;
+    
+    // Store depreciation info for display
+    if (depreciationResult.depreciationApplied) {
+      depreciationType = 'yearly';
+      depreciationValue = depreciationResult.depreciationPercentage.toString();
     }
     
     monthlyInstallment = Math.round(finalReimbursementAmount / 24);
@@ -261,25 +306,8 @@ export const updateRequestStatus = (
   
   requests[requestIndex] = {
     ...requests[requestIndex],
-    ...(status === 'processed' && depreciationType && depreciationValue && {
-      reimbursementAmount: Math.round(
-        (() => {
-          let amount = requests[requestIndex].reimbursementAmount;
-          const purchaseDate = new Date(requests[requestIndex].laptopPurchaseDate);
-          const joiningDate = new Date(requests[requestIndex].joiningDate);
-          const depreciationRate = parseFloat(depreciationValue) / 100;
-          
-          if (depreciationType === 'monthly') {
-            const monthsDiff = Math.floor((joiningDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
-            amount = amount * Math.pow(1 - depreciationRate, monthsDiff);
-          } else if (depreciationType === 'yearly') {
-            const yearsDiff = Math.floor((joiningDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24 * 365));
-            amount = amount * Math.pow(1 - depreciationRate, yearsDiff);
-          }
-          
-          return amount;
-        })()
-      ),
+    ...(status === 'processed' && {
+      reimbursementAmount: finalReimbursementAmount,
       depreciationType,
       depreciationValue
     }),
@@ -339,6 +367,28 @@ export const getStats = () => {
 
 // Check if employee is eligible for new reimbursement
 export const checkReimbursementEligibility = (employeeId: string): { eligible: boolean; nextEligibleDate?: string; reason?: string } => {
+  const users = getUsers();
+  const user = users.find(u => u.employeeId === employeeId);
+  
+  if (!user) {
+    return { eligible: false, reason: 'User not found' };
+  }
+  
+  // Check if user has been working for at least 365 days
+  const joiningDate = new Date(user.joiningDate);
+  const today = new Date();
+  const daysSinceJoining = Math.floor((today.getTime() - joiningDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (daysSinceJoining < 365) {
+    const eligibleDate = new Date(joiningDate);
+    eligibleDate.setDate(eligibleDate.getDate() + 365);
+    return {
+      eligible: false,
+      nextEligibleDate: eligibleDate.toISOString(),
+      reason: `You need to complete 365 days of service. Eligible from ${eligibleDate.toLocaleDateString()}`
+    };
+  }
+  
   const requests = getRequests();
   const employeeRequests = requests.filter(r => r.employeeId === employeeId && r.status === 'processed');
   
@@ -353,9 +403,8 @@ export const checkReimbursementEligibility = (employeeId: string): { eligible: b
   
   if (latestProcessedRequest.nextEligibleDate) {
     const nextEligibleDate = new Date(latestProcessedRequest.nextEligibleDate);
-    const now = new Date();
     
-    if (now < nextEligibleDate) {
+    if (today < nextEligibleDate) {
       return {
         eligible: false,
         nextEligibleDate: latestProcessedRequest.nextEligibleDate,
