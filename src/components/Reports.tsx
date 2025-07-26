@@ -60,13 +60,13 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         const requestDate = new Date(request.submittedAt);
         if (reportType === 'monthly') {
           return requestDate.getMonth() === selectedMonth && requestDate.getFullYear() === selectedYear;
-        } else {
+        } else if (reportType === 'yearly') {
           return requestDate.getFullYear() === selectedYear;
-        }
         } else if (reportType === 'financial-year') {
           const financialYearStart = new Date(selectedFinancialYear, 3, 1); // April 1st
           const financialYearEnd = new Date(selectedFinancialYear + 1, 2, 31); // March 31st
           return requestDate >= financialYearStart && requestDate <= financialYearEnd;
+        }
       });
 
       // Calculate statistics
