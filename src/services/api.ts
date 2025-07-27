@@ -374,18 +374,18 @@ export const checkReimbursementEligibility = (employeeId: string): { eligible: b
     return { eligible: false, reason: 'User not found' };
   }
   
-  // Check if user has been working for at least 365 days
+  // Check if user has been working for at least 15 days
   const joiningDate = new Date(user.joiningDate);
   const today = new Date();
   const daysSinceJoining = Math.floor((today.getTime() - joiningDate.getTime()) / (1000 * 60 * 60 * 24));
   
-  if (daysSinceJoining < 365) {
+  if (daysSinceJoining < 15) {
     const eligibleDate = new Date(joiningDate);
-    eligibleDate.setDate(eligibleDate.getDate() + 365);
+    eligibleDate.setDate(eligibleDate.getDate() + 15);
     return {
       eligible: false,
       nextEligibleDate: eligibleDate.toISOString(),
-      reason: `You need to complete 365 days of service. Eligible from ${eligibleDate.toLocaleDateString()}`
+      reason: `You need to complete 15 days of service. Eligible from ${eligibleDate.toLocaleDateString()}`
     };
   }
   

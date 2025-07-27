@@ -80,7 +80,7 @@ export const EmployeeDashboard: React.FC = () => {
           <div className="flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
             <div>
-              <h4 className="font-medium text-yellow-800 mb-1">Own Your Laptop Not Available</h4>
+              <h4 className="font-medium text-yellow-800 mb-1">Laptop Request Not Available</h4>
               <p className="text-sm text-yellow-700">{eligibility.reason}</p>
             </div>
           </div>

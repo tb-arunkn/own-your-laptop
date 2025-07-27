@@ -218,7 +218,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
             const depreciationInfo = calculateDepreciation(
               request.laptopPurchaseDate,
               request.joiningDate,
-              request.invoiceAmount * 0.75 // Original calculated amount
+              request.reimbursementAmount // Use the actual reimbursement amount
             );
             
             if (depreciationInfo.depreciationApplied) {
@@ -226,7 +226,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
                 <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
                   <h4 className="font-medium text-amber-800 mb-3 flex items-center gap-2">
                     <Calculator className="h-4 w-4" />
-                    Automatic Depreciation Applied
+                    Automatic Depreciation Applied (Device Older Than Joining Date)
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                     <div>
@@ -245,6 +245,12 @@ export const RequestsList: React.FC<RequestsListProps> = ({
                       <span className="text-amber-600 font-medium">Final Amount:</span>
                       <p className="font-bold text-amber-800">₹{depreciationInfo.depreciatedAmount.toLocaleString()}</p>
                     </div>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-amber-200">
+                    <p className="text-xs text-amber-700">
+                      <strong>Note:</strong> Depreciation is automatically applied because the laptop was purchased before your joining date. 
+                      The system calculates 20% depreciation per year from purchase date to joining date.
+                    </p>
                   </div>
                 </div>
               );
@@ -382,10 +388,10 @@ export const RequestsList: React.FC<RequestsListProps> = ({
               
               <div className="mt-4">
                 <div className="bg-gray-100 p-3 rounded text-sm text-gray-700">
-                  <strong>Automatic Calculation:</strong> Depreciation is automatically calculated at 20% per year for laptops purchased before joining date. 
+                  <strong>Automatic Depreciation Rule:</strong> 20% per year is automatically applied for devices purchased before joining date. 
                   {depreciationInfo.depreciationApplied 
-                    ? ` This laptop is ${depreciationInfo.yearsOld} year(s) old, so ${depreciationInfo.depreciationPercentage}% depreciation is applied.`
-                    : ' No depreciation applied as laptop was purchased after joining date.'
+                    ? ` This device is ${depreciationInfo.yearsOld} year(s) older than joining date, so ${depreciationInfo.depreciationPercentage}% depreciation is applied.`
+                    : ' No depreciation applied as device was purchased after joining date.'
                   }
                 </div>
               </div>
