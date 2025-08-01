@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { saveRequest, uploadFile } from '../services/api';
-import { Upload, Calculator, AlertCircle, CheckCircle } from 'lucide-react';
+import { saveRequest, uploadFile, calculateDepreciation } from '../services/api';
+import { Upload, Calculator, AlertCircle, CheckCircle, TrendingDown, Calendar } from 'lucide-react';
 
 interface ReimbursementFormProps {
   onSubmitted: () => void;
@@ -23,13 +23,15 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [depreciationInfo, setDepreciationInfo] = useState<any>(null);
+  const [reimbursementAmount, setReimbursementAmount] = useState<number>(0);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
     setErrors(prev => ({ ...prev, [name]: '' }));
     
-    if (name === 'invoiceAmount' || name === 'category') {
+    if (name === 'invoiceAmount' || name === 'category' || name === 'laptopPurchaseDate') {
       calculateReimbursement({ ...formData, [name]: value });
     }
   };
@@ -42,13 +44,26 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
   };
 
   const calculateReimbursement = (data: typeof formData) => {
-    if (!data.invoiceAmount) {
+    if (!data.invoiceAmount || !data.laptopPurchaseDate) {
+      setDepreciationInfo(null);
+      setReimbursementAmount(0);
       return;
     }
 
     const invoiceAmount = parseFloat(data.invoiceAmount);
     const maxAmount = data.category === 'Developer' ? 82000 : 72000;
-    const reimbursement = Math.min(invoiceAmount * 0.75, maxAmount);
+    const baseReimbursement = Math.min(invoiceAmount * 0.75, maxAmount);
+    
+    // Calculate depreciation
+    const depreciation = calculateDepreciation(
+      data.laptopPurchaseDate,
+      data.joiningDate,
+      baseReimbursement,
+      true // Include monthly breakdown
+    );
+    
+    setDepreciationInfo(depreciation);
+    setReimbursementAmount(depreciation.depreciatedAmount);
   };
 
   const validateForm = () => {
@@ -69,9 +84,18 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
     } else {
       const purchaseDate = new Date(formData.laptopPurchaseDate);
       const joiningDate = new Date(formData.joiningDate);
+      const today = new Date();
       
       if (purchaseDate > today) {
         newErrors.laptopPurchaseDate = 'Purchase date cannot be in the future';
+      } else {
+        // Check if invoice date is within 365 days of joining date
+        const timeDiff = Math.abs(purchaseDate.getTime() - joiningDate.getTime());
+        const daysDiff = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        
+        if (daysDiff > 365) {
+          newErrors.laptopPurchaseDate = 'Invoice date cannot be more than 365 days from joining date';
+        }
       }
     }
 
@@ -98,14 +122,16 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
 
       // Calculate reimbursement amount
       const invoiceAmount = parseFloat(formData.invoiceAmount);
-      const maxAmount = formData.category === 'Developer' ? 82000 : 72000;
-      const reimbursementAmount = Math.min(invoiceAmount * 0.75, maxAmount);
+      const finalReimbursementAmount = reimbursementAmount || (() => {
+        const maxAmount = formData.category === 'Developer' ? 82000 : 72000;
+        return Math.min(invoiceAmount * 0.75, maxAmount);
+      })();
 
       // Save request
       saveRequest({
         ...formData,
         invoiceAmount: invoiceAmount,
-        reimbursementAmount: reimbursementAmount,
+        reimbursementAmount: finalReimbursementAmount,
         invoiceFile,
         status: 'pending',
         submittedBy: user?.id || '',
@@ -230,6 +256,82 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
             </div>
           </div>
 
+          {/* Real-time Depreciation Calculation Display */}
+          {depreciationInfo && formData.invoiceAmount && formData.laptopPurchaseDate && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Calculator className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-blue-900">Reimbursement Calculation</h4>
+                  <p className="text-sm text-blue-700">Live calculation based on your inputs</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="bg-white p-4 rounded-lg border border-blue-100">
+                  <div className="text-sm text-gray-600 mb-1">Invoice Amount</div>
+                  <div className="text-lg font-bold text-gray-900">₹{parseFloat(formData.invoiceAmount).toLocaleString()}</div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-blue-100">
+                  <div className="text-sm text-gray-600 mb-1">75% Eligible Amount</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    ₹{Math.min(parseFloat(formData.invoiceAmount) * 0.75, formData.category === 'Developer' ? 82000 : 72000).toLocaleString()}
+                  </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border border-green-100">
+                  <div className="text-sm text-gray-600 mb-1">Final Reimbursement</div>
+                  <div className="text-lg font-bold text-green-600">₹{reimbursementAmount.toLocaleString()}</div>
+                </div>
+              </div>
+              
+              {depreciationInfo.depreciationApplied && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <TrendingDown className="h-5 w-5 text-amber-600" />
+                    <h5 className="font-medium text-amber-800">Depreciation Applied</h5>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                      <div className="text-sm text-amber-600">Device Age</div>
+                      <div className="font-semibold text-amber-800">
+                        {Math.floor(depreciationInfo.monthsOld / 12)} years, {depreciationInfo.monthsOld % 12} months
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-amber-600">Depreciation Rate</div>
+                      <div className="font-semibold text-amber-800">{depreciationInfo.depreciationPercentage}%</div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-amber-600">Amount Reduced</div>
+                      <div className="font-semibold text-amber-800">
+                        ₹{(Math.min(parseFloat(formData.invoiceAmount) * 0.75, formData.category === 'Developer' ? 82000 : 72000) - reimbursementAmount).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="text-xs text-amber-700 bg-amber-100 p-3 rounded">
+                    <strong>Why depreciation?</strong> Your laptop was purchased before your joining date. 
+                    We apply 20% yearly depreciation (1.67% monthly) to account for the device's age at the time you joined.
+                  </div>
+                </div>
+              )}
+              
+              {!depreciationInfo.depreciationApplied && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                    <h5 className="font-medium text-green-800">No Depreciation Applied</h5>
+                  </div>
+                  <div className="text-sm text-green-700">
+                    Your laptop was purchased after your joining date, so you'll receive the full eligible amount.
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Upload Invoice *

@@ -23,6 +23,23 @@ export const EmployeeDashboard: React.FC = () => {
       if (user?.employeeId) {
         const eligibilityCheck = checkReimbursementEligibility(user.employeeId);
         setEligibility(eligibilityCheck);
+        
+        // Also check 15-day joining requirement
+        if (eligibilityCheck.eligible && user.joiningDate) {
+          const joiningDate = new Date(user.joiningDate);
+          const today = new Date();
+          const daysSinceJoining = Math.floor((today.getTime() - joiningDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysSinceJoining < 15) {
+            const eligibleDate = new Date(joiningDate);
+            eligibleDate.setDate(eligibleDate.getDate() + 15);
+            setEligibility({
+              eligible: false,
+              nextEligibleDate: eligibleDate.toISOString(),
+              reason: `You need to complete 15 days of service before applying. You can apply from ${eligibleDate.toLocaleDateString()}.`
+            });
+          }
+        }
       }
     } catch (error) {
       console.error('Error fetching requests:', error);

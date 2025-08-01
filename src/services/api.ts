@@ -198,11 +198,12 @@ export const saveRequest = (request: Omit<Request, 'id' | 'submittedAt'>): Reque
 };
 
 // Calculate depreciation for a laptop
-export const calculateDepreciation = (purchaseDate: string, joiningDate: string, originalAmount: number): {
+export const calculateDepreciation = (purchaseDate: string, joiningDate: string, originalAmount: number, includeMonthlyBreakdown: boolean = false): {
   depreciatedAmount: number;
   depreciationApplied: boolean;
-  yearsOld: number;
+  monthsOld: number;
   depreciationPercentage: number;
+  monthlyBreakdown?: Array<{month: string, value: number, depreciation: number}>;
 } => {
   const purchase = new Date(purchaseDate);
   const joining = new Date(joiningDate);
@@ -212,34 +213,57 @@ export const calculateDepreciation = (purchaseDate: string, joiningDate: string,
     return {
       depreciatedAmount: originalAmount,
       depreciationApplied: false,
-      yearsOld: 0,
+      monthsOld: 0,
       depreciationPercentage: 0
     };
   }
   
-  // Calculate years between purchase and joining
+  // Calculate months between purchase and joining
   const timeDiff = joining.getTime() - purchase.getTime();
-  const yearsOld = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * 365));
+  const monthsOld = Math.floor(timeDiff / (1000 * 60 * 60 * 24 * 30.44)); // Average days per month
   
-  if (yearsOld === 0) {
+  if (monthsOld === 0) {
     return {
       depreciatedAmount: originalAmount,
       depreciationApplied: false,
-      yearsOld: 0,
+      monthsOld: 0,
       depreciationPercentage: 0
     };
   }
   
-  // Apply 20% yearly depreciation
-  const depreciationRate = 0.20;
-  const depreciationPercentage = Math.min(yearsOld * 20, 80); // Max 80% depreciation
-  const depreciatedAmount = Math.round(originalAmount * Math.pow(1 - depreciationRate, yearsOld));
+  // Apply 20% yearly depreciation (1.67% monthly)
+  const monthlyDepreciationRate = 0.20 / 12; // 20% per year = 1.67% per month
+  const totalDepreciationRate = Math.min(monthsOld * monthlyDepreciationRate, 0.80); // Max 80% depreciation
+  const depreciationPercentage = Math.round(totalDepreciationRate * 100);
+  const depreciatedAmount = Math.round(originalAmount * (1 - totalDepreciationRate));
+  
+  let monthlyBreakdown;
+  if (includeMonthlyBreakdown) {
+    monthlyBreakdown = [];
+    let currentValue = originalAmount;
+    const startDate = new Date(purchase);
+    
+    for (let i = 0; i < Math.min(monthsOld, 48); i++) { // Show max 4 years
+      const monthDate = new Date(startDate);
+      monthDate.setMonth(monthDate.getMonth() + i);
+      const monthName = monthDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      const monthlyDepreciation = Math.round(currentValue * monthlyDepreciationRate);
+      currentValue = Math.max(currentValue - monthlyDepreciation, originalAmount * 0.2);
+      
+      monthlyBreakdown.push({
+        month: monthName,
+        value: currentValue,
+        depreciation: monthlyDepreciation
+      });
+    }
+  }
   
   return {
     depreciatedAmount: Math.max(depreciatedAmount, originalAmount * 0.2), // Minimum 20% of original value
     depreciationApplied: true,
-    yearsOld,
-    depreciationPercentage
+    monthsOld,
+    depreciationPercentage,
+    ...(monthlyBreakdown && { monthlyBreakdown })
   };
 };
 

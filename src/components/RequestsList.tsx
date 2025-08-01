@@ -231,11 +231,13 @@ export const RequestsList: React.FC<RequestsListProps> = ({
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                     <div>
                       <span className="text-amber-600 font-medium">Laptop Age:</span>
-                      <p className="font-bold text-amber-800">{depreciationInfo.yearsOld} year(s)</p>
+                      <p className="font-bold text-amber-800">
+                        {Math.floor(depreciationInfo.monthsOld / 12)} years, {depreciationInfo.monthsOld % 12} months
+                      </p>
                     </div>
                     <div>
                       <span className="text-amber-600 font-medium">Depreciation:</span>
-                      <p className="font-bold text-amber-800">{depreciationInfo.depreciationPercentage}% (20% yearly)</p>
+                      <p className="font-bold text-amber-800">{depreciationInfo.depreciationPercentage}% (1.67% monthly)</p>
                     </div>
                     <div>
                       <span className="text-amber-600 font-medium">Original Amount:</span>
@@ -249,7 +251,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
                   <div className="mt-3 pt-3 border-t border-amber-200">
                     <p className="text-xs text-amber-700">
                       <strong>Note:</strong> Depreciation is automatically applied because the laptop was purchased before your joining date. 
-                      The system calculates 20% depreciation per year from purchase date to joining date.
+                      The system calculates 20% yearly depreciation (1.67% monthly) from purchase date to joining date.
                     </p>
                   </div>
                 </div>
@@ -367,7 +369,9 @@ export const RequestsList: React.FC<RequestsListProps> = ({
                 </div>
                 <div className="bg-white p-3 rounded border">
                   <span className="text-sm text-gray-600">Laptop Age:</span>
-                  <p className="font-medium">{depreciationInfo.yearsOld} year(s)</p>
+                  <p className="font-medium">
+                    {Math.floor(depreciationInfo.monthsOld / 12)} years, {depreciationInfo.monthsOld % 12} months
+                  </p>
                 </div>
               </div>
               
@@ -378,7 +382,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
                 </div>
                 <div className="bg-amber-50 p-3 rounded border border-amber-200">
                   <span className="text-amber-600 font-medium text-sm">Depreciation Applied:</span>
-                  <p className="font-bold text-amber-800">{depreciationInfo.depreciationPercentage}% (20% yearly)</p>
+                  <p className="font-bold text-amber-800">{depreciationInfo.depreciationPercentage}% (1.67% monthly)</p>
                 </div>
                 <div className="bg-green-50 p-3 rounded border border-green-200">
                   <span className="text-green-600 font-medium text-sm">Final Amount:</span>
@@ -388,9 +392,9 @@ export const RequestsList: React.FC<RequestsListProps> = ({
               
               <div className="mt-4">
                 <div className="bg-gray-100 p-3 rounded text-sm text-gray-700">
-                  <strong>Automatic Depreciation Rule:</strong> 20% per year is automatically applied for devices purchased before joining date. 
+                  <strong>Automatic Depreciation Rule:</strong> 20% yearly (1.67% monthly) is automatically applied for devices purchased before joining date. 
                   {depreciationInfo.depreciationApplied 
-                    ? ` This device is ${depreciationInfo.yearsOld} year(s) older than joining date, so ${depreciationInfo.depreciationPercentage}% depreciation is applied.`
+                    ? ` This device is ${Math.floor(depreciationInfo.monthsOld / 12)} years, ${depreciationInfo.monthsOld % 12} months older than joining date, so ${depreciationInfo.depreciationPercentage}% depreciation is applied.`
                     : ' No depreciation applied as device was purchased after joining date.'
                   }
                 </div>
