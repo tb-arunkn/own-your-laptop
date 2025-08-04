@@ -158,6 +158,16 @@ const initializeData = () => {
   if (!localStorage.getItem('emailTemplates')) {
     localStorage.setItem('emailTemplates', JSON.stringify(defaultEmailTemplates));
   }
+  if (!localStorage.getItem('smtpSettings')) {
+    const defaultSmtpSettings = {
+      host: 'smtp.gmail.com',
+      port: 587,
+      secure: false,
+      user: '',
+      password: ''
+    };
+    localStorage.setItem('smtpSettings', JSON.stringify(defaultSmtpSettings));
+  }
 };
 
 // User management
