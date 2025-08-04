@@ -6,6 +6,7 @@ import { UserManagementForm } from './UserManagementForm';
 import { UsersList } from './UsersList';
 import { Reports } from './Reports';
 import { Settings } from './Settings';
+import { ExistingRentals } from './ExistingRentals';
 import { getRequests, getStats, updateRequestStatus, getUsers, Request, User } from '../services/api';
 
 export const AdminDashboard: React.FC = () => {
@@ -172,6 +173,9 @@ export const AdminDashboard: React.FC = () => {
       
       case 'reports':
         return <Reports userRole="it_admin" />;
+      
+      case 'existing-rentals':
+        return <ExistingRentals userRole="it_admin" />;
       
       case 'settings':
         return <Settings />;

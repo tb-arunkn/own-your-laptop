@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { DashboardOverview } from './DashboardOverview';
 import { RequestsList } from './RequestsList';
 import { Reports } from './Reports';
+import { ExistingRentals } from './ExistingRentals';
 import { getRequests, getStats, updateRequestStatus, Request } from '../services/api';
 
 export const FinanceDashboard: React.FC = () => {
@@ -129,6 +130,9 @@ export const FinanceDashboard: React.FC = () => {
       
       case 'reports':
         return <Reports userRole="finance" />;
+      
+      case 'existing-rentals':
+        return <ExistingRentals userRole="finance" />;
       
       default:
         return <DashboardOverview userRole="finance" />;
