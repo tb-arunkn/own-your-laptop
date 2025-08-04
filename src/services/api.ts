@@ -367,15 +367,15 @@ export const updateRequestStatus = (
   // Store original request for email notifications
   const originalRequest = requests[requestIndex];
   
+  // Initialize finalReimbursementAmount with current value
+  let finalReimbursementAmount = requests[requestIndex].reimbursementAmount;
+  
   const now = new Date();
   let processedAt, monthlyInstallment, installmentStartDate, installmentEndDate, nextEligibleDate;
   
   // If status is being changed to 'processed', calculate installment details
   if (status === 'processed') {
     processedAt = now.toISOString();
-    
-    // Calculate final reimbursement amount with automatic depreciation
-    let finalReimbursementAmount = requests[requestIndex].reimbursementAmount;
     
     // Apply automatic depreciation calculation
     const depreciationResult = calculateDepreciation(
