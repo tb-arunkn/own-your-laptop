@@ -11,8 +11,9 @@ interface ExistingRental {
   actualAmount: number;
   windowsUpgradeCost: number;
   monthlyInstalment: number;
-  startMonth: string;
-  endMonth: string;
+  startDate: string;
+  endDate: string;
+  nextRequestDate: string;
 }
 
 interface ExistingRentalsProps {
@@ -91,7 +92,7 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
       const expectedHeaders = [
         'Emp ID', 'Emp Name', 'Emp Email ID', 'Invoice Date', 'Total Amount',
         'Actual Amount', 'Windows Upgrade Cost', 'Monthly Instalment', 
-        'Start Month', 'End Month'
+        'Start Date', 'End Date'
       ];
 
       // Validate headers
@@ -125,9 +126,23 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
             actualAmount: parseFloat(values[5]) || 0,
             windowsUpgradeCost: parseFloat(values[6]) || 0,
             monthlyInstalment: parseFloat(values[7]) || 0,
-            startMonth: values[8] || '',
-            endMonth: values[9] || ''
+            startDate: values[8] || '',
+            endDate: values[9] || ''
           };
+
+          // Calculate next request date (36 months after end date)
+          if (rental.endDate) {
+            try {
+              const endDate = new Date(rental.endDate);
+              const nextRequestDate = new Date(endDate);
+              nextRequestDate.setMonth(nextRequestDate.getMonth() + 36);
+              rental.nextRequestDate = nextRequestDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+            } catch (error) {
+              rental.nextRequestDate = '';
+            }
+          } else {
+            rental.nextRequestDate = '';
+          }
 
           // Basic validation
           if (!rental.empId || !rental.empName || !rental.empEmail) {
@@ -261,8 +276,8 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
             <span className="bg-gray-100 px-2 py-1 rounded text-xs">Actual Amount</span>
             <span className="bg-gray-100 px-2 py-1 rounded text-xs">Windows Upgrade Cost</span>
             <span className="bg-gray-100 px-2 py-1 rounded text-xs">Monthly Instalment</span>
-            <span className="bg-gray-100 px-2 py-1 rounded text-xs">Start Month</span>
-            <span className="bg-gray-100 px-2 py-1 rounded text-xs">End Month</span>
+            <span className="bg-gray-100 px-2 py-1 rounded text-xs">Start Date</span>
+            <span className="bg-gray-100 px-2 py-1 rounded text-xs">End Date</span>
           </div>
         </div>
 
@@ -343,7 +358,10 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
                     Monthly Instalment
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Period
+                    Rental Period
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Next Request Date
                   </th>
                 </tr>
               </thead>
@@ -389,8 +407,26 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        <div className="font-medium">{rental.startMonth}</div>
-                        <div className="text-xs text-gray-600">to {rental.endMonth}</div>
+                        <div className="font-medium">
+                          {rental.startDate ? new Date(rental.startDate).toLocaleDateString() : 'N/A'}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          to {rental.endDate ? new Date(rental.endDate).toLocaleDateString() : 'N/A'}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">
+                        {rental.nextRequestDate ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+                            <span className="font-medium">
+                              {new Date(rental.nextRequestDate).toLocaleDateString()}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Not calculated</span>
+                        )}
                       </div>
                     </td>
                   </tr>
