@@ -91,8 +91,8 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
       const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
       const expectedHeaders = [
         'Emp ID', 'Emp Name', 'Emp Email ID', 'Invoice Date', 'Total Amount',
-        'Actual Amount', 'Windows Upgrade Cost', 'Monthly Instalment', 
-        'Start Date', 'End Date'
+        ['EMP001', 'John Doe', 'john.doe@company.com', '2023-01-15', '100000', '75000', '5000', '3125', '2023-02-01', '2025-01-31'],
+        ['EMP002', 'Jane Smith', 'jane.smith@company.com', '2023-03-20', '120000', '82000', '8000', '3750', '2023-04-01', '2025-03-31']
       ];
 
       // Validate headers
@@ -135,8 +135,12 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
             try {
               const endDate = new Date(rental.endDate);
               const nextRequestDate = new Date(endDate);
-              nextRequestDate.setMonth(nextRequestDate.getMonth() + 36);
-              rental.nextRequestDate = nextRequestDate.toISOString().split('T')[0]; // YYYY-MM-DD format
+              nextRequestDate.setDate(nextRequestDate.getDate() + 365);
+              rental.nextRequestDate = nextRequestDate.toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+              });
             } catch (error) {
               rental.nextRequestDate = '';
             }
@@ -408,10 +412,18 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
                         <div className="font-medium">
-                          {rental.startDate ? new Date(rental.startDate).toLocaleDateString() : 'N/A'}
+                          {rental.startDate ? new Date(rental.startDate).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          }) : 'N/A'}
                         </div>
                         <div className="text-xs text-gray-600">
-                          to {rental.endDate ? new Date(rental.endDate).toLocaleDateString() : 'N/A'}
+                          to {rental.endDate ? new Date(rental.endDate).toLocaleDateString('en-GB', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric'
+                          }) : 'N/A'}
                         </div>
                       </div>
                     </td>
@@ -420,9 +432,7 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
                         {rental.nextRequestDate ? (
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                            <span className="font-medium">
-                              {new Date(rental.nextRequestDate).toLocaleDateString()}
-                            </span>
+                            <span className="font-medium">{rental.nextRequestDate}</span>
                           </div>
                         ) : (
                           <span className="text-gray-400">Not calculated</span>
