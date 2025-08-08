@@ -432,7 +432,13 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
                         {rental.nextRequestDate ? (
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                            <span className="font-medium">{rental.nextRequestDate}</span>
+                            <span className="font-medium">
+                              {new Date(rental.nextRequestDate).toLocaleDateString('en-GB', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric'
+                              })}
+                            </span>
                           </div>
                         ) : (
                           <span className="text-gray-400">Not calculated</span>
