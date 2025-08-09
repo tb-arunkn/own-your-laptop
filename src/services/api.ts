@@ -129,8 +129,11 @@ export interface Request {
   laptopPurchaseDate: string;
   category: string;
   invoiceAmount: number;
+  hasWindowsPro?: boolean;
+  windowsProAmount?: number;
   reimbursementAmount: number;
   invoiceFile?: string;
+  windowsInvoiceFile?: string;
   status: string;
   submittedAt: string;
   submittedBy: string;

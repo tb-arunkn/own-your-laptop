@@ -434,7 +434,7 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
                     <div>
                       <div className="text-sm text-amber-600">Amount Reduced</div>
                       <div className="font-semibold text-amber-800">
-                        ₹{(Math.min(parseFloat(formData.invoiceAmount) * 0.75, formData.category === 'Developer' ? 82000 : 72000) - reimbursementAmount).toLocaleString()}
+                        ₹{(Math.min((parseFloat(formData.invoiceAmount) + (formData.hasWindowsPro && formData.windowsProAmount ? parseFloat(formData.windowsProAmount) : 0)) * 0.75, formData.category === 'Developer' ? 82000 : 72000) - reimbursementAmount).toLocaleString()}
                       </div>
                     </div>
                   </div>

@@ -328,6 +328,20 @@ export const RequestsList: React.FC<RequestsListProps> = ({
                 </a>
               </div>
             )}
+            {request.windowsInvoiceFile && (
+              <div>
+                <span className="text-gray-600">Windows Invoice:</span>
+                <a
+                  href={getFileUrl(request.windowsInvoiceFile)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                >
+                  <Eye className="h-3 w-3" />
+                  View Windows Invoice
+                </a>
+              </div>
+            )}
           </div>
 
           {request.comments && (
