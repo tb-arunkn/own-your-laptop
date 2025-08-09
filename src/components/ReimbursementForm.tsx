@@ -16,10 +16,13 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
     laptopPurchaseDate: '',
     category: 'Developer',
     invoiceAmount: '',
+    hasWindowsPro: false,
+    windowsProAmount: '',
     depreciationType: '',
     depreciationValue: '',
   });
   const [file, setFile] = useState<File | null>(null);
+  const [windowsFile, setWindowsFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -28,10 +31,18 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const newValue = e.target.type === 'checkbox' ? (e.target as HTMLInputElement).checked : value;
+    setFormData(prev => ({ ...prev, [name]: newValue }));
     setErrors(prev => ({ ...prev, [name]: '' }));
     
-    if (name === 'invoiceAmount' || name === 'category' || name === 'laptopPurchaseDate') {
+    // Clear Windows Pro amount if checkbox is unchecked
+    if (name === 'hasWindowsPro' && !newValue) {
+      setFormData(prev => ({ ...prev, windowsProAmount: '' }));
+      setWindowsFile(null);
+      setErrors(prev => ({ ...prev, windowsProAmount: '', windowsFile: '' }));
+    }
+    
+    if (name === 'invoiceAmount' || name === 'category' || name === 'laptopPurchaseDate' || name === 'windowsProAmount') {
       calculateReimbursement({ ...formData, [name]: value });
     }
   };
@@ -43,6 +54,12 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
     }
   };
 
+  const handleWindowsFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setWindowsFile(e.target.files[0]);
+      setErrors(prev => ({ ...prev, windowsFile: '' }));
+    }
+  };
   const calculateReimbursement = (data: typeof formData) => {
     if (!data.invoiceAmount || !data.laptopPurchaseDate) {
       setDepreciationInfo(null);
@@ -51,8 +68,11 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
     }
 
     const invoiceAmount = parseFloat(data.invoiceAmount);
+    const windowsAmount = data.hasWindowsPro && data.windowsProAmount ? parseFloat(data.windowsProAmount) : 0;
+    const totalInvoiceAmount = invoiceAmount + windowsAmount;
+    
     const maxAmount = data.category === 'Developer' ? 82000 : 72000;
-    const baseReimbursement = Math.min(invoiceAmount * 0.75, maxAmount);
+    const baseReimbursement = Math.min(totalInvoiceAmount * 0.75, maxAmount);
     
     // Calculate depreciation
     const depreciation = calculateDepreciation(
@@ -100,6 +120,22 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
     }
 
     if (!formData.invoiceAmount) newErrors.invoiceAmount = 'Required';
+    
+    // Windows Pro validation
+    if (formData.hasWindowsPro) {
+      if (!formData.windowsProAmount) {
+        newErrors.windowsProAmount = 'Windows Pro amount is required';
+      } else {
+        const windowsAmount = parseFloat(formData.windowsProAmount);
+        if (windowsAmount <= 0) {
+          newErrors.windowsProAmount = 'Amount must be greater than 0';
+        }
+      }
+      if (!windowsFile) {
+        newErrors.windowsFile = 'Windows Pro invoice is required';
+      }
+    }
+    
     if (!file) newErrors.file = 'Invoice file is required';
 
     setErrors(newErrors);
@@ -116,23 +152,34 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
     try {
       // Upload file if provided
       let invoiceFile: string | undefined;
+      let windowsInvoiceFile: string | undefined;
+      
       if (file) {
         invoiceFile = await uploadFile(file);
+      }
+      
+      if (windowsFile) {
+        windowsInvoiceFile = await uploadFile(windowsFile);
       }
 
       // Calculate reimbursement amount
       const invoiceAmount = parseFloat(formData.invoiceAmount);
+      const windowsAmount = formData.hasWindowsPro && formData.windowsProAmount ? parseFloat(formData.windowsProAmount) : 0;
+      const totalInvoiceAmount = invoiceAmount + windowsAmount;
+      
       const finalReimbursementAmount = reimbursementAmount || (() => {
         const maxAmount = formData.category === 'Developer' ? 82000 : 72000;
-        return Math.min(invoiceAmount * 0.75, maxAmount);
+        return Math.min(totalInvoiceAmount * 0.75, maxAmount);
       })();
 
       // Save request
       saveRequest({
         ...formData,
-        invoiceAmount: invoiceAmount,
+        invoiceAmount: totalInvoiceAmount,
+        windowsProAmount: windowsAmount,
         reimbursementAmount: finalReimbursementAmount,
         invoiceFile,
+        windowsInvoiceFile,
         status: 'pending',
         submittedBy: user?.id || '',
       });
@@ -254,6 +301,77 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
                 <p className="mt-1 text-sm text-red-600">{errors.invoiceAmount}</p>
               )}
             </div>
+            
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-3 mb-4">
+                <input
+                  type="checkbox"
+                  id="hasWindowsPro"
+                  name="hasWindowsPro"
+                  checked={formData.hasWindowsPro}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="hasWindowsPro" className="text-sm font-medium text-gray-700">
+                  I have purchased Windows Pro upgrade separately
+                </label>
+              </div>
+              
+              {formData.hasWindowsPro && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Windows Pro Amount (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      name="windowsProAmount"
+                      value={formData.windowsProAmount}
+                      onChange={handleChange}
+                      placeholder="Enter Windows Pro cost"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {errors.windowsProAmount && (
+                      <p className="mt-1 text-sm text-red-600">{errors.windowsProAmount}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Windows Pro Invoice *
+                    </label>
+                    <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
+                      <div className="space-y-1 text-center">
+                        <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                        <div className="flex text-sm text-gray-600">
+                          <label
+                            htmlFor="windows-file-upload"
+                            className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500"
+                          >
+                            <span>Upload Windows invoice</span>
+                            <input
+                              id="windows-file-upload"
+                              name="windows-file-upload"
+                              type="file"
+                              className="sr-only"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={handleWindowsFileChange}
+                            />
+                          </label>
+                        </div>
+                        <p className="text-xs text-gray-500">PDF, PNG, JPG up to 5MB</p>
+                        {windowsFile && (
+                          <p className="text-sm text-green-600">Selected: {windowsFile.name}</p>
+                        )}
+                      </div>
+                    </div>
+                    {errors.windowsFile && (
+                      <p className="mt-1 text-sm text-red-600">{errors.windowsFile}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Real-time Depreciation Calculation Display */}
@@ -271,13 +389,22 @@ export const ReimbursementForm: React.FC<ReimbursementFormProps> = ({ onSubmitte
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div className="bg-white p-4 rounded-lg border border-blue-100">
-                  <div className="text-sm text-gray-600 mb-1">Invoice Amount</div>
-                  <div className="text-lg font-bold text-gray-900">₹{parseFloat(formData.invoiceAmount).toLocaleString()}</div>
+                  <div className="text-sm text-gray-600 mb-1">
+                    {formData.hasWindowsPro ? 'Total Invoice Amount' : 'Invoice Amount'}
+                  </div>
+                  <div className="text-lg font-bold text-gray-900">
+                    ₹{(parseFloat(formData.invoiceAmount) + (formData.hasWindowsPro && formData.windowsProAmount ? parseFloat(formData.windowsProAmount) : 0)).toLocaleString()}
+                  </div>
+                  {formData.hasWindowsPro && formData.windowsProAmount && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      Laptop: ₹{parseFloat(formData.invoiceAmount).toLocaleString()} + Windows: ₹{parseFloat(formData.windowsProAmount).toLocaleString()}
+                    </div>
+                  )}
                 </div>
                 <div className="bg-white p-4 rounded-lg border border-blue-100">
                   <div className="text-sm text-gray-600 mb-1">75% Eligible Amount</div>
                   <div className="text-lg font-bold text-blue-600">
-                    ₹{Math.min(parseFloat(formData.invoiceAmount) * 0.75, formData.category === 'Developer' ? 82000 : 72000).toLocaleString()}
+                    ₹{Math.min((parseFloat(formData.invoiceAmount) + (formData.hasWindowsPro && formData.windowsProAmount ? parseFloat(formData.windowsProAmount) : 0)) * 0.75, formData.category === 'Developer' ? 82000 : 72000).toLocaleString()}
                   </div>
                 </div>
                 <div className="bg-white p-4 rounded-lg border border-green-100">
