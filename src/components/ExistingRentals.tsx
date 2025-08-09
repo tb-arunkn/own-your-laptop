@@ -134,13 +134,17 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
           if (rental.endDate) {
             try {
               const endDate = new Date(rental.endDate);
-              const nextRequestDate = new Date(endDate);
-              nextRequestDate.setDate(nextRequestDate.getDate() + 365);
-              rental.nextRequestDate = nextRequestDate.toLocaleDateString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric'
-              });
+              if (!isNaN(endDate.getTime())) {
+                const nextRequestDate = new Date(endDate);
+                nextRequestDate.setDate(nextRequestDate.getDate() + 365);
+                rental.nextRequestDate = nextRequestDate.toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric'
+                });
+              } else {
+                rental.nextRequestDate = '';
+              }
             } catch (error) {
               rental.nextRequestDate = '';
             }
@@ -429,16 +433,10 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900">
-                        {rental.nextRequestDate ? (
+                        {rental.nextRequestDate && rental.nextRequestDate !== 'Not calculated' ? (
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                            <span className="font-medium">
-                              {new Date(rental.nextRequestDate).toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric'
-                              })}
-                            </span>
+                            <span className="font-medium">{rental.nextRequestDate}</span>
                           </div>
                         ) : (
                           <span className="text-gray-400">Not calculated</span>
