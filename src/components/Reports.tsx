@@ -143,11 +143,18 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         month,
         developer: {
           count: developerRequests.length,
-          amount: developerRequests.reduce((sum, req) => sum + req.reimbursementAmount, 0)
+          amount: developerRequests.reduce((sum, req) => sum + req.reimbursementAmount, 0),
+          users: [...new Set(developerRequests.map(req => req.employeeId))].length
         },
         nonDeveloper: {
           count: nonDeveloperRequests.length,
-          amount: nonDeveloperRequests.reduce((sum, req) => sum + req.reimbursementAmount, 0)
+          amount: nonDeveloperRequests.reduce((sum, req) => sum + req.reimbursementAmount, 0),
+          users: [...new Set(nonDeveloperRequests.map(req => req.employeeId))].length
+        },
+        total: {
+          count: monthRequests.length,
+          amount: monthRequests.reduce((sum, req) => sum + req.reimbursementAmount, 0),
+          users: [...new Set(monthRequests.map(req => req.employeeId))].length
         }
       };
     });
@@ -223,6 +230,15 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
           borderColor: 'rgba(16, 185, 129, 1)',
           borderWidth: 1,
         },
+        {
+          label: 'Total Users',
+          data: reportData.monthlyData.map((data: any) => data.total.users * 10000), // Scale for visibility
+          backgroundColor: 'rgba(245, 158, 11, 0.3)',
+          borderColor: 'rgba(245, 158, 11, 1)',
+          borderWidth: 2,
+          type: 'line' as const,
+          yAxisID: 'y1',
+        },
       ],
     };
   };
@@ -237,6 +253,16 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
         display: true,
         text: `Monthly Reimbursement Amounts - FY ${selectedFinancialYear}-${(selectedFinancialYear + 1).toString().slice(-2)}`,
       },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            if (context.dataset.label === 'Total Users') {
+              return `Total Users: ${Math.round(context.parsed.y / 10000)}`;
+            }
+            return context.dataset.label + ': ₹' + context.parsed.y.toLocaleString();
+          }
+        }
+      }
     },
     scales: {
       y: {
@@ -246,6 +272,20 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
             return '₹' + value.toLocaleString();
           }
         }
+      },
+      y1: {
+        type: 'linear' as const,
+        display: true,
+        position: 'right' as const,
+        beginAtZero: true,
+        ticks: {
+          callback: function(value: any) {
+            return Math.round(value / 10000) + ' users';
+          }
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
       },
     },
   };
@@ -357,11 +397,12 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Developer Count</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Developer</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Developer Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Non-Developer Count</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Non-Developer</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Non-Developer Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Total</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Users</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -371,19 +412,35 @@ export const Reports: React.FC<ReportsProps> = ({ userRole }) => {
                           {monthData.month}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {monthData.developer.count}
+                          <div>
+                            <div className="font-medium">{monthData.developer.count} requests</div>
+                            <div className="text-xs text-gray-500">{monthData.developer.users} users</div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           ₹{monthData.developer.amount.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {monthData.nonDeveloper.count}
+                          <div>
+                            <div className="font-medium">{monthData.nonDeveloper.count} requests</div>
+                            <div className="text-xs text-gray-500">{monthData.nonDeveloper.users} users</div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           ₹{monthData.nonDeveloper.amount.toLocaleString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          ₹{(monthData.developer.amount + monthData.nonDeveloper.amount).toLocaleString()}
+                          <div>
+                            <div className="font-bold text-blue-600">₹{monthData.total.amount.toLocaleString()}</div>
+                            <div className="text-xs text-gray-500">{monthData.total.count} requests</div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          <div className="flex items-center justify-center">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {monthData.total.users}
+                            </span>
+                          </div>
                         </td>
                       </tr>
                     ))}
