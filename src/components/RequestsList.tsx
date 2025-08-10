@@ -209,6 +209,11 @@ export const RequestsList: React.FC<RequestsListProps> = ({
               <div>
                 <p className="text-sm text-gray-600">Laptop Rental</p>
                 <p className="font-medium">₹{request.reimbursementAmount.toLocaleString()}</p>
+                {request.windowsProAmount && request.windowsProAmount > 0 && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    + Windows License: ₹{request.windowsProAmount.toLocaleString()}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -303,11 +308,22 @@ export const RequestsList: React.FC<RequestsListProps> = ({
             <div>
               <span className="text-gray-600">Invoice Amount:</span>
               <span className="ml-2 font-medium">₹{request.invoiceAmount.toLocaleString()}</span>
+              {request.windowsProAmount && request.windowsProAmount > 0 && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Laptop: ₹{(request.invoiceAmount - request.windowsProAmount).toLocaleString()} + Windows: ₹{request.windowsProAmount.toLocaleString()}
+                </div>
+              )}
             </div>
             <div>
               <span className="text-gray-600">Email:</span>
               <span className="ml-2 font-medium">{request.email}</span>
             </div>
+            {request.windowsProAmount && request.windowsProAmount > 0 && (
+              <div>
+                <span className="text-gray-600">Windows License:</span>
+                <span className="ml-2 font-medium text-blue-600">₹{request.windowsProAmount.toLocaleString()}</span>
+              </div>
+            )}
             {request.depreciationType && request.depreciationValue && (
               <div>
                 <span className="text-gray-600">Depreciation:</span>
