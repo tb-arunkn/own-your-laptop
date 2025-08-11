@@ -91,13 +91,15 @@ export const ExistingRentals: React.FC<ExistingRentalsProps> = ({ userRole }) =>
       const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
       const expectedHeaders = [
         'Emp ID', 'Emp Name', 'Emp Email ID', 'Invoice Date', 'Total Amount',
-        ['EMP001', 'John Doe', 'john.doe@company.com', '2023-01-15', '100000', '75000', '5000', '3125', '2023-02-01', '2025-01-31'],
-        ['EMP002', 'Jane Smith', 'jane.smith@company.com', '2023-03-20', '120000', '82000', '8000', '3750', '2023-04-01', '2025-03-31']
+        'Actual Amount', 'Windows Upgrade Cost', 'Monthly Instalment', 'Start Date', 'End Date'
       ];
 
       // Validate headers
       const missingHeaders = expectedHeaders.filter(expected => 
-        !headers.some(header => header.toLowerCase() === expected.toLowerCase())
+        !headers.some(header => 
+          typeof header === 'string' && typeof expected === 'string' && 
+          header.toLowerCase() === expected.toLowerCase()
+        )
       );
 
       if (missingHeaders.length > 0) {
