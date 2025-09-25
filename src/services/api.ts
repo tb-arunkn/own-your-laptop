@@ -3,80 +3,78 @@ export interface EmailTemplate {
   name: string;
   subject: string;
   body: string;
+  variables: string[];
 }
 
 const defaultEmailTemplates: EmailTemplate[] = [
   {
     id: 'request_approved',
     name: 'Request Approved',
-    subject: 'Laptop Reimbursement Request Approved - {{requestId}}',
-    body: `Dear {{employeeName}},
+    subject: 'Laptop Reimbursement Request Approved - #{requestId}',
+    body: `Dear {userName},
 
 Your laptop reimbursement request has been approved!
 
 Request Details:
-- Request ID: {{requestId}}
-- Employee ID: {{employeeId}}
-- Invoice Amount: ₹{{invoiceAmount}}
-- Reimbursement Amount: ₹{{reimbursementAmount}}
-- Category: {{category}}
+- Request ID: #{requestId}
+- Employee ID: {employeeId}
+- Invoice Amount: ₹{invoiceAmount}
+- Reimbursement Amount: ₹{reimbursementAmount}
+- Category: {category}
 
-{{#if comments}}
-Comments: {{comments}}
-{{/if}}
+Comments: {comments}
 
 Your request will now be processed by the Finance team for payment.
 
 Best regards,
-IT Team`
+IT Team`,
+    variables: ['userName', 'requestId', 'employeeId', 'invoiceAmount', 'reimbursementAmount', 'category', 'comments']
   },
   {
     id: 'request_rejected',
     name: 'Request Rejected',
-    subject: 'Laptop Reimbursement Request Rejected - {{requestId}}',
-    body: `Dear {{employeeName}},
+    subject: 'Laptop Reimbursement Request Rejected - #{requestId}',
+    body: `Dear {userName},
 
 We regret to inform you that your laptop reimbursement request has been rejected.
 
 Request Details:
-- Request ID: {{requestId}}
-- Employee ID: {{employeeId}}
-- Invoice Amount: ₹{{invoiceAmount}}
-- Category: {{category}}
+- Request ID: #{requestId}
+- Employee ID: {employeeId}
+- Invoice Amount: ₹{invoiceAmount}
+- Category: {category}
 
-{{#if comments}}
-Reason for rejection: {{comments}}
-{{/if}}
+Reason for rejection: {comments}
 
 If you have any questions, please contact the IT team.
 
 Best regards,
-IT Team`
+IT Team`,
+    variables: ['userName', 'requestId', 'employeeId', 'invoiceAmount', 'category', 'comments']
   },
   {
     id: 'request_processed',
     name: 'Request Processed',
-    subject: 'Laptop Reimbursement Processed - Payment Details - {{requestId}}',
-    body: `Dear {{employeeName}},
+    subject: 'Laptop Reimbursement Processed - Payment Details - #{requestId}',
+    body: `Dear {userName},
 
 Your laptop reimbursement has been processed and payment has been initiated.
 
 Payment Details:
-- Request ID: {{requestId}}
-- Employee ID: {{employeeId}}
-- Final Reimbursement Amount: ₹{{reimbursementAmount}}
-- Monthly Installment: ₹{{monthlyInstallment}}
-- Installment Period: {{installmentStartDate}} to {{installmentEndDate}}
-- Next Eligible Date: {{nextEligibleDate}}
+- Request ID: #{requestId}
+- Employee ID: {employeeId}
+- Final Reimbursement Amount: ₹{reimbursementAmount}
+- Monthly Installment: ₹{monthlyInstallment}
+- Installment Period: {startDate} to {endDate}
+- Next Eligible Date: {nextEligibilityDate}
 
-{{#if comments}}
-Processing Notes: {{comments}}
-{{/if}}
+Processing Notes: {comments}
 
 The amount will be credited to your salary in monthly installments as mentioned above.
 
 Best regards,
-Finance Team`
+Finance Team`,
+    variables: ['userName', 'requestId', 'employeeId', 'reimbursementAmount', 'monthlyInstallment', 'startDate', 'endDate', 'nextEligibilityDate', 'comments']
   }
 ];
 // Mock data for demo purposes

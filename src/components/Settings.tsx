@@ -411,7 +411,7 @@ export const Settings: React.FC = () => {
                       <div>
                         <h4 className="text-md font-medium text-gray-900">{template.name}</h4>
                         <p className="text-sm text-gray-500">
-                          Available variables: {template.variables.map(v => `{${v}}`).join(', ')}
+                          Available variables: {(template.variables || []).map(v => `{${v}}`).join(', ')}
                         </p>
                       </div>
                       <button
