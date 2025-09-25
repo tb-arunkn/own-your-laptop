@@ -1,7 +1,7 @@
 import React from 'react';
 import { useState } from 'react';
 import { getFileUrl, calculateDepreciation } from '../services/api';
-import { FileText, Calendar, DollarSign, User, Eye, CreditCard, Clock, Calculator, AlertTriangle } from 'lucide-react';
+import { FileText, Calendar, DollarSign, User, Eye, CreditCard, Clock, Calculator, AlertTriangle, XCircle } from 'lucide-react';
 
 import { Request } from '../services/api';
 
@@ -362,8 +362,25 @@ export const RequestsList: React.FC<RequestsListProps> = ({
 
           {request.comments && (
             <div className="mt-4 p-3 bg-gray-50 rounded-md">
-              <p className="text-sm text-gray-600">Comments:</p>
-              <p className="text-sm">{request.comments}</p>
+             <p className="text-sm text-gray-600">
+               {request.status === 'rejected' ? 'Reason for Rejection:' : 'Comments:'}
+             </p>
+             <p className={`text-sm ${request.status === 'rejected' ? 'text-red-700 font-medium' : ''}`}>
+               {request.comments}
+             </p>
+            </div>
+          )}
+
+          {/* Show rejection reason prominently for rejected requests */}
+          {request.status === 'rejected' && request.comments && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3">
+                <XCircle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-medium text-red-800 mb-1">Request Rejected</h4>
+                  <p className="text-sm text-red-700">{request.comments}</p>
+                </div>
+              </div>
             </div>
           )}
 
