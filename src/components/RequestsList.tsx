@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { getFileUrl, calculateDepreciation } from '../services/api';
 import { FileText, Calendar, DollarSign, User, Eye, CreditCard, Clock, Calculator, AlertTriangle, XCircle } from 'lucide-react';
 
@@ -28,6 +28,9 @@ export const RequestsList: React.FC<RequestsListProps> = ({
     value: string;
     comments: string;
   }>>({});
+  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>({});
+  const [showRejectionModal, setShowRejectionModal] = useState<string | null>(null);
+  const rejectionInputRef = useRef<HTMLTextAreaElement>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -108,6 +111,11 @@ export const RequestsList: React.FC<RequestsListProps> = ({
   };
 
   const handleStatusUpdate = (id: string, newStatus: string) => {
+    if (newStatus === 'rejected') {
+      setShowRejectionModal(id);
+      return;
+    }
+    
     if (newStatus === 'processed' && userRole === 'finance' && onProcessWithDepreciation) {
       const depState = getDepreciationState(id);
       if (depState.enabled && (!depState.type || !depState.value)) {
@@ -122,12 +130,40 @@ export const RequestsList: React.FC<RequestsListProps> = ({
         depState.comments || undefined
       );
     } else if (onStatusUpdate) {
-      let comments: string | undefined;
-      
-      if (newStatus === 'rejected') {
-        // Comments will be handled in AdminDashboard
+      if (newStatus === 'paid') {
+        const comments = prompt('Add comments (optional):') || undefined;
+        onStatusUpdate(id, newStatus, comments);
+      } else {
         onStatusUpdate(id, newStatus);
-      } else if (newStatus === 'paid') {
+      }
+    }
+  };
+
+  const handleRejectionSubmit = (id: string) => {
+    const reason = rejectionReasons[id]?.trim();
+    if (!reason) {
+      alert('Please provide a reason for rejection');
+      return;
+    }
+    
+    if (onStatusUpdate) {
+      onStatusUpdate(id, 'rejected', reason);
+    }
+    
+    setShowRejectionModal(null);
+    setRejectionReasons(prev => ({ ...prev, [id]: '' }));
+  };
+
+  const handleRejectionCancel = () => {
+    setShowRejectionModal(null);
+    if (showRejectionModal) {
+      setRejectionReasons(prev => ({ ...prev, [showRejectionModal]: '' }));
+    }
+  };
+
+  const updateRejectionReason = (id: string, reason: string) => {
+    setRejectionReasons(prev => ({ ...prev, [id]: reason }));
+  };
         comments = prompt('Add comments (optional):') || undefined;
         onStatusUpdate(id, newStatus, comments);
       } else {
@@ -156,7 +192,56 @@ export const RequestsList: React.FC<RequestsListProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <>
+      {/* Rejection Modal */}
+      {showRejectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <XCircle className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Reject Request</h3>
+                  <p className="text-sm text-gray-600">Please provide a reason for rejection</p>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for Rejection *
+                </label>
+                <textarea
+                  ref={rejectionInputRef}
+                  value={rejectionReasons[showRejectionModal] || ''}
+                  onChange={(e) => updateRejectionReason(showRejectionModal, e.target.value)}
+                  rows={4}
+                  placeholder="Please explain why this request is being rejected..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                />
+              </div>
+              
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={handleRejectionCancel}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleRejectionSubmit(showRejectionModal)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Reject Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-4">
       {requests.map((request) => (
         <div
           key={request.id}
@@ -504,6 +589,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
           )}
         </div>
       ))}
-    </div>
+      </div>
+    </>
   );
 };
