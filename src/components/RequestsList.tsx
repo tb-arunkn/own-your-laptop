@@ -185,7 +185,56 @@ export const RequestsList: React.FC<RequestsListProps> = ({
   }
 
   return (
-    <div className="space-y-4">
+    <>
+      {/* Rejection Modal */}
+      {showRejectionModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="h-10 w-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <XCircle className="h-6 w-6 text-red-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">Reject Request</h3>
+                  <p className="text-sm text-gray-600">Please provide a reason for rejection</p>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for Rejection *
+                </label>
+                <textarea
+                  ref={rejectionInputRef}
+                  value={rejectionReasons[showRejectionModal] || ''}
+                  onChange={(e) => updateRejectionReason(showRejectionModal, e.target.value)}
+                  rows={4}
+                  placeholder="Please explain why this request is being rejected..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                />
+              </div>
+              
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={handleRejectionCancel}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleRejectionSubmit(showRejectionModal)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors"
+                >
+                  Reject Request
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-4">
       {requests.map((request) => (
         <div
           key={request.id}
@@ -533,43 +582,7 @@ export const RequestsList: React.FC<RequestsListProps> = ({
           )}
         </div>
       ))}
-      
-      {/* Rejection Modal */}
-      {showRejectionModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Reject Request</h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Reason for rejection *
-              </label>
-              <textarea
-                ref={rejectionInputRef}
-                value={rejectionReasons[showRejectionModal] || ''}
-                onChange={(e) => updateRejectionReason(showRejectionModal, e.target.value)}
-                rows={4}
-                placeholder="Please provide a detailed reason for rejecting this request..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                autoFocus
-              />
-            </div>
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={handleRejectionCancel}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleRejectionSubmit(showRejectionModal)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-              >
-                Reject Request
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      </div>
+    </>
   );
 };
