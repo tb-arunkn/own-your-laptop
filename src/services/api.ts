@@ -117,6 +117,7 @@ export interface User {
   name: string;
   joiningDate: string;
   isActive?: boolean;
+  category?: string;
 }
 
 export interface Request {

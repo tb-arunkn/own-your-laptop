@@ -587,6 +587,199 @@ export const Settings: React.FC = () => {
               </button>
             </div>
           )}
+
+          {activeTab === 'sso' && user?.role === 'it_admin' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Entra ID Single Sign-On</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Configure Microsoft Entra ID (formerly Azure AD) for single sign-on authentication
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 mb-6">
+                <input
+                  type="checkbox"
+                  id="sso-enabled"
+                  checked={entraIDSettings.enabled}
+                  onChange={(e) => handleEntraIDChange('enabled', e.target.checked)}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="sso-enabled" className="text-sm font-medium text-gray-700">
+                  Enable Entra ID Single Sign-On
+                </label>
+              </div>
+
+              {entraIDSettings.enabled && (
+                <div className="space-y-6 p-6 bg-blue-50 border border-blue-200 rounded-lg">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tenant ID *
+                      </label>
+                      <input
+                        type="text"
+                        value={entraIDSettings.tenantId}
+                        onChange={(e) => handleEntraIDChange('tenantId', e.target.value)}
+                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Your Azure AD tenant identifier</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Client ID (Application ID) *
+                      </label>
+                      <input
+                        type="text"
+                        value={entraIDSettings.clientId}
+                        onChange={(e) => handleEntraIDChange('clientId', e.target.value)}
+                        placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Application ID from Azure AD app registration</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Client Secret *
+                      </label>
+                      <input
+                        type="password"
+                        value={entraIDSettings.clientSecret}
+                        onChange={(e) => handleEntraIDChange('clientSecret', e.target.value)}
+                        placeholder="Enter client secret"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Client secret from Azure AD app registration</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Redirect URI
+                      </label>
+                      <input
+                        type="url"
+                        value={entraIDSettings.redirectUri}
+                        onChange={(e) => handleEntraIDChange('redirectUri', e.target.value)}
+                        placeholder="https://yourapp.com/auth/callback"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">OAuth redirect URI configured in Azure AD</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Allowed Email Domains
+                    </label>
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="e.g., company.com"
+                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleDomainAdd((e.target as HTMLInputElement).value);
+                              (e.target as HTMLInputElement).value = '';
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            const input = (e.target as HTMLButtonElement).previousElementSibling as HTMLInputElement;
+                            handleDomainAdd(input.value);
+                            input.value = '';
+                          }}
+                          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      
+                      {entraIDSettings.allowedDomains.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {entraIDSettings.allowedDomains.map((domain, index) => (
+                            <span
+                              key={index}
+                              className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full"
+                            >
+                              {domain}
+                              <button
+                                type="button"
+                                onClick={() => handleDomainRemove(domain)}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-gray-500">
+                        Only users with email addresses from these domains will be allowed to sign in via SSO
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+                    <div className="flex items-start gap-3">
+                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                      <div>
+                        <h4 className="font-medium text-yellow-800 mb-1">Configuration Requirements</h4>
+                        <ul className="text-sm text-yellow-700 space-y-1">
+                          <li>• Register your application in Azure AD</li>
+                          <li>• Configure redirect URI in Azure AD app registration</li>
+                          <li>• Grant necessary API permissions (User.Read, etc.)</li>
+                          <li>• Generate and securely store client secret</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {success && (
+                <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-md">
+                  <CheckCircle className="h-4 w-4" />
+                  <p className="text-sm">{success}</p>
+                </div>
+              )}
+
+              {error && (
+                <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md">
+                  <AlertCircle className="h-4 w-4" />
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={saveEntraIDSettings}
+                  disabled={loading}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Save className="h-4 w-4" />
+                  {loading ? 'Saving...' : 'Save SSO Settings'}
+                </button>
+
+                {entraIDSettings.enabled && (
+                  <button
+                    onClick={testSSOConnection}
+                    disabled={testingSSO || !entraIDSettings.tenantId || !entraIDSettings.clientId}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Key className="h-4 w-4" />
+                    {testingSSO ? 'Testing...' : 'Test SSO Connection'}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

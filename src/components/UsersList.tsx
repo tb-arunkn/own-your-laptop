@@ -292,6 +292,21 @@ export const UsersList: React.FC<UsersListProps> = ({ users, loading, onUserUpda
                           <p className="text-xs text-red-600 mt-1">{editErrors.employeeId}</p>
                         )}
                       </div>
+                      <div>
+                        <select
+                          value={editFormData.category}
+                          onChange={(e) => handleEditFormChange('category', e.target.value)}
+                          className={`w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                            editErrors.category ? 'border-red-300' : 'border-gray-300'
+                          }`}
+                        >
+                          <option value="Developer">Developer</option>
+                          <option value="Non-Developer">Non-Developer</option>
+                        </select>
+                        {editErrors.category && (
+                          <p className="text-xs text-red-600 mt-1">{editErrors.category}</p>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center">

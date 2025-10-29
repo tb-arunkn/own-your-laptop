@@ -13,6 +13,7 @@ export const UserManagementForm: React.FC<UserManagementFormProps> = ({ onUserCr
     email: '',
     joiningDate: '',
     role: 'employee',
+    category: 'Developer',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -181,6 +182,24 @@ export const UserManagementForm: React.FC<UserManagementFormProps> = ({ onUserCr
               </select>
               {errors.role && (
                 <p className="mt-1 text-sm text-red-600">{errors.role}</p>
+              )}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category *
+              </label>
+              <select
+                name="category"
+                value={formData.category}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="Developer">Developer (Max: ₹82,000)</option>
+                <option value="Non-Developer">Non-Developer (Max: ₹72,000)</option>
+              </select>
+              {errors.category && (
+                <p className="mt-1 text-sm text-red-600">{errors.category}</p>
               )}
             </div>
           </div>
