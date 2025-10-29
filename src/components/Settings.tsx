@@ -150,6 +150,9 @@ export const Settings: React.FC = () => {
   const [testingEmail, setTestingEmail] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
   const [testingSSO, setTestingSSO] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   useEffect(() => {
     // Load settings from localStorage
@@ -167,6 +170,12 @@ export const Settings: React.FC = () => {
     
     if (savedTemplates) {
       setEmailTemplates(JSON.parse(savedTemplates));
+    }
+    
+    // Load company logo
+    const savedLogo = localStorage.getItem('companyLogo');
+    if (savedLogo) {
+      setLogoPreview(savedLogo);
     }
   }, []);
 
@@ -304,6 +313,76 @@ export const Settings: React.FC = () => {
     handleEntraIDChange('allowedDomains', newDomains);
   };
 
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+      
+      // Validate file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        setError('Image file size must be less than 2MB');
+        return;
+      }
+      
+      setLogoFile(file);
+      setError(null);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setLogoPreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const saveCompanyLogo = async () => {
+    if (!logoFile && !logoPreview) {
+      setError('Please select a logo image');
+      return;
+    }
+    
+    setUploadingLogo(true);
+    setError(null);
+    
+    try {
+      if (logoFile) {
+        // In a real app, this would upload to a server
+        // For demo, we'll save the base64 data to localStorage
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const logoData = e.target?.result as string;
+          localStorage.setItem('companyLogo', logoData);
+          setSuccess('Company logo uploaded successfully');
+          setTimeout(() => setSuccess(null), 3000);
+          setLogoFile(null);
+        };
+        reader.readAsDataURL(logoFile);
+      } else {
+        setSuccess('Company logo settings saved');
+        setTimeout(() => setSuccess(null), 3000);
+      }
+    } catch (err) {
+      setError('Failed to upload company logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const removeCompanyLogo = () => {
+    if (confirm('Are you sure you want to remove the company logo?')) {
+      localStorage.removeItem('companyLogo');
+      setLogoPreview(null);
+      setLogoFile(null);
+      setSuccess('Company logo removed successfully');
+      setTimeout(() => setSuccess(null), 3000);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -325,6 +404,19 @@ export const Settings: React.FC = () => {
               <div className="flex items-center gap-2">
                 <SettingsIcon className="h-4 w-4" />
                 SMTP Settings
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('branding')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === 'branding'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                Branding
               </div>
             </button>
             <button
