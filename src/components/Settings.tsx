@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Mail, Save, TestTube, CheckCircle, AlertCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Mail, Save, TestTube, CheckCircle, AlertCircle, Shield, Key } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface SMTPSettings {
   host: string;
@@ -19,6 +20,15 @@ interface EmailTemplate {
   variables: string[];
 }
 
+interface EntraIDSettings {
+  enabled: boolean;
+  tenantId: string;
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+  allowedDomains: string[];
+}
+
 const defaultSMTPSettings: SMTPSettings = {
   host: '',
   port: 587,
@@ -27,6 +37,15 @@ const defaultSMTPSettings: SMTPSettings = {
   fromEmail: '',
   fromName: 'Own Your Laptop Portal',
   secure: true
+};
+
+const defaultEntraIDSettings: EntraIDSettings = {
+  enabled: false,
+  tenantId: '',
+  clientId: '',
+  clientSecret: '',
+  redirectUri: '',
+  allowedDomains: []
 };
 
 const defaultEmailTemplates: EmailTemplate[] = [
@@ -120,22 +139,30 @@ Own Your Laptop Portal Team`,
 ];
 
 export const Settings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'smtp' | 'templates'>('smtp');
+  const { user } = useAuth();
+  const [activeTab, setActiveTab] = useState<'smtp' | 'templates' | 'sso'>('smtp');
   const [smtpSettings, setSMTPSettings] = useState<SMTPSettings>(defaultSMTPSettings);
+  const [entraIDSettings, setEntraIDSettings] = useState<EntraIDSettings>(defaultEntraIDSettings);
   const [emailTemplates, setEmailTemplates] = useState<EmailTemplate[]>(defaultEmailTemplates);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [testingEmail, setTestingEmail] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<string | null>(null);
+  const [testingSSO, setTestingSSO] = useState(false);
 
   useEffect(() => {
     // Load settings from localStorage
     const savedSMTP = localStorage.getItem('smtpSettings');
+    const savedEntraID = localStorage.getItem('entraIDSettings');
     const savedTemplates = localStorage.getItem('emailTemplates');
     
     if (savedSMTP) {
       setSMTPSettings(JSON.parse(savedSMTP));
+    }
+    
+    if (savedEntraID) {
+      setEntraIDSettings(JSON.parse(savedEntraID));
     }
     
     if (savedTemplates) {
@@ -145,6 +172,12 @@ export const Settings: React.FC = () => {
 
   const handleSMTPChange = (field: keyof SMTPSettings, value: string | number | boolean) => {
     setSMTPSettings(prev => ({ ...prev, [field]: value }));
+    setSuccess(null);
+    setError(null);
+  };
+
+  const handleEntraIDChange = (field: keyof EntraIDSettings, value: string | boolean | string[]) => {
+    setEntraIDSettings(prev => ({ ...prev, [field]: value }));
     setSuccess(null);
     setError(null);
   };
@@ -176,6 +209,30 @@ export const Settings: React.FC = () => {
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save SMTP settings');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveEntraIDSettings = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      // Validate required fields if SSO is enabled
+      if (entraIDSettings.enabled) {
+        if (!entraIDSettings.tenantId || !entraIDSettings.clientId || !entraIDSettings.clientSecret) {
+          throw new Error('Please fill in all required Entra ID fields when SSO is enabled');
+        }
+      }
+      
+      // Save to localStorage (in real app, this would be an API call)
+      localStorage.setItem('entraIDSettings', JSON.stringify(entraIDSettings));
+      
+      setSuccess('Entra ID SSO settings saved successfully');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save Entra ID settings');
     } finally {
       setLoading(false);
     }
@@ -217,6 +274,36 @@ export const Settings: React.FC = () => {
     }
   };
 
+  const testSSOConnection = async () => {
+    setTestingSSO(true);
+    setError(null);
+    
+    try {
+      // In a real app, this would test the Entra ID connection
+      // For demo, we'll simulate a test
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setSuccess('Entra ID SSO connection test successful!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setError('Entra ID SSO connection test failed. Please check your settings.');
+    } finally {
+      setTestingSSO(false);
+    }
+  };
+
+  const handleDomainAdd = (domain: string) => {
+    if (domain.trim() && !entraIDSettings.allowedDomains.includes(domain.trim())) {
+      const newDomains = [...entraIDSettings.allowedDomains, domain.trim()];
+      handleEntraIDChange('allowedDomains', newDomains);
+    }
+  };
+
+  const handleDomainRemove = (domainToRemove: string) => {
+    const newDomains = entraIDSettings.allowedDomains.filter(domain => domain !== domainToRemove);
+    handleEntraIDChange('allowedDomains', newDomains);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -253,6 +340,21 @@ export const Settings: React.FC = () => {
                 Email Templates
               </div>
             </button>
+            {user?.role === 'it_admin' && (
+              <button
+                onClick={() => setActiveTab('sso')}
+                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === 'sso'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  SSO Settings
+                </div>
+              </button>
+            )}
           </nav>
         </div>
 
