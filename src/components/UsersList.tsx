@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { User, resetUserPassword, toggleUserStatus, deleteUser, updateUser } from '../services/api';
-import { Users, Mail, Calendar, Shield, Key, CheckCircle, AlertCircle, UserX, Trash2, UserCheck, Edit3, Save, X } from 'lucide-react';
+import { Users, Mail, Calendar, Shield, Key, CheckCircle, AlertCircle, UserX, Trash2, UserCheck, CreditCard as Edit3, Save, X } from 'lucide-react';
 
 interface UsersListProps {
   users: User[];
@@ -292,21 +292,6 @@ export const UsersList: React.FC<UsersListProps> = ({ users, loading, onUserUpda
                           <p className="text-xs text-red-600 mt-1">{editErrors.employeeId}</p>
                         )}
                       </div>
-                      <div>
-                        <select
-                          value={editFormData.category}
-                          onChange={(e) => handleEditFormChange('category', e.target.value)}
-                          className={`w-full px-2 py-1 text-sm border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                            editErrors.category ? 'border-red-300' : 'border-gray-300'
-                          }`}
-                        >
-                          <option value="Developer">Developer</option>
-                          <option value="Non-Developer">Non-Developer</option>
-                        </select>
-                        {editErrors.category && (
-                          <p className="text-xs text-red-600 mt-1">{editErrors.category}</p>
-                        )}
-                      </div>
                     </div>
                   ) : (
                     <div className="flex items-center">
@@ -336,6 +321,15 @@ export const UsersList: React.FC<UsersListProps> = ({ users, loading, onUserUpda
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleColor(user.role)}`}>
                     {getRoleDisplayName(user.role)}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                    user.category === 'Developer' 
+                      ? 'bg-indigo-100 text-indigo-800' 
+                      : 'bg-orange-100 text-orange-800'
+                  }`}>
+                    {user.category || 'Developer'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
