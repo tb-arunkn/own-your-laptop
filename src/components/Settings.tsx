@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Mail, Save, TestTube, CheckCircle, AlertCircle, Shield, Key } from 'lucide-react';
+import { Settings as SettingsIcon, Mail, Save, TestTube, CheckCircle, AlertCircle, Shield, Key, Upload } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface SMTPSettings {
