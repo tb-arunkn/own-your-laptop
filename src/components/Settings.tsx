@@ -589,6 +589,108 @@ export const Settings: React.FC = () => {
             </div>
           )}
 
+          {activeTab === 'branding' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900 mb-4">Company Branding</h3>
+                <p className="text-sm text-gray-600 mb-6">
+                  Upload your company logo to customize the application header
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-4">
+                    Company Logo
+                  </label>
+                  
+                  {logoPreview && (
+                    <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium text-gray-700">Current Logo:</span>
+                        <button
+                          onClick={removeCompanyLogo}
+                          className="text-sm text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          Remove Logo
+                        </button>
+                      </div>
+                      <img
+                        src={logoPreview}
+                        alt="Company Logo Preview"
+                        className="max-h-16 max-w-48 object-contain border border-gray-200 rounded"
+                      />
+                    </div>
+                  )}
+                  
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                    <div className="text-center">
+                      <Upload className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                      <div className="flex text-sm text-gray-600">
+                        <label
+                          htmlFor="logo-upload"
+                          className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                        >
+                          <span>Upload company logo</span>
+                          <input
+                            id="logo-upload"
+                            type="file"
+                            className="sr-only"
+                            accept="image/*"
+                            onChange={handleLogoUpload}
+                            disabled={uploadingLogo}
+                          />
+                        </label>
+                        <p className="pl-1">or drag and drop</p>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">PNG, JPG, GIF up to 2MB</p>
+                      {logoFile && (
+                        <p className="text-sm text-green-600 mt-2">Selected: {logoFile.name}</p>
+                      )}
+                      {uploadingLogo && (
+                        <p className="text-sm text-blue-600 mt-2">Uploading logo...</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 text-sm text-gray-600">
+                    <p className="font-medium mb-2">Logo Guidelines:</p>
+                    <ul className="space-y-1 text-xs">
+                      <li>• Recommended size: 200x60px (3:1 aspect ratio)</li>
+                      <li>• Maximum file size: 2MB</li>
+                      <li>• Supported formats: PNG, JPG, GIF</li>
+                      <li>• Transparent backgrounds supported</li>
+                      <li>• Logo will be displayed in the application header</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              {success && (
+                <div className="flex items-center gap-2 text-green-600 bg-green-50 p-3 rounded-md">
+                  <CheckCircle className="h-4 w-4" />
+                  <p className="text-sm">{success}</p>
+                </div>
+              )}
+
+              {error && (
+                <div className="flex items-center gap-2 text-red-600 bg-red-50 p-3 rounded-md">
+                  <AlertCircle className="h-4 w-4" />
+                  <p className="text-sm">{error}</p>
+                </div>
+              )}
+
+              <button
+                onClick={saveCompanyLogo}
+                disabled={uploadingLogo || (!logoFile && !logoPreview)}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <Save className="h-4 w-4" />
+                {uploadingLogo ? 'Uploading...' : 'Save Logo'}
+              </button>
+            </div>
+          )}
+
           {activeTab === 'templates' && (
             <div className="space-y-6">
               <div>
